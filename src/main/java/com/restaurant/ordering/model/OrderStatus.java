@@ -1,4 +1,10 @@
 package com.restaurant.ordering.model;
 
-public class OrderStatus {
+public enum OrderStatus {
+    NEW,
+    PREPARING,
+    READY,
+    SERVED,
+    PAID,
+    CANCELLED
 }

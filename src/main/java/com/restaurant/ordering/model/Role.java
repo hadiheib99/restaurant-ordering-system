@@ -1,4 +1,9 @@
 package com.restaurant.ordering.model;
 
-public class Role {
+
+public enum Role {
+    ADMIN,
+    WAITER,
+    CUSTOMER,
+    CHEF
 }
