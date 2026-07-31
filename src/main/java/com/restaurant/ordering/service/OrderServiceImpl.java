@@ -14,6 +14,9 @@ import com.restaurant.ordering.messaging.dto.OrderMessage;
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -23,10 +26,23 @@ public class OrderServiceImpl implements OrderService {
     private final UserRepository userRepository;
     private final MealRepository mealRepository;
     private final OrderProducer orderProducer;
+
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getAllOrders() {
-        return orderRepository.findAll()
+
+        if (isAdminOrWaiter()) {
+
+            return orderRepository.findAll()
+                    .stream()
+                    .map(this::toResponse)
+                    .toList();
+        }
+
+        String email = getCurrentUserEmail();
+
+        return orderRepository
+                .findByCustomerEmail(email)
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -132,18 +148,35 @@ public class OrderServiceImpl implements OrderService {
                 savedOrder.getStatus().name()
         );
 
-        orderProducer.sendOrder(message);
+        orderProducer.sendOrderEvent(message);
         return toResponse(savedOrder);
     }
 
     @Override
-    public OrderResponse updateStatus(Long id, OrderStatus status) {
+
+
+    public OrderResponse updateStatus(Long id, OrderStatus newStatus) {
+
         RestaurantOrder order = findOrder(id);
-        order.setStatus(status);
 
-        return toResponse(orderRepository.save(order));
+        validateStatusTransition(order.getStatus(), newStatus);
+
+        order.setStatus(newStatus);
+
+        RestaurantOrder savedOrder = orderRepository.save(order);
+
+        OrderMessage message = new OrderMessage(
+                savedOrder.getId(),
+                savedOrder.getCustomer().getId(),
+                getFullName(savedOrder.getCustomer()),
+                savedOrder.getTotalPrice(),
+                savedOrder.getStatus().name()
+        );
+
+        orderProducer.sendOrderEvent(message);
+
+        return toResponse(savedOrder);
     }
-
     @Override
     public void deleteOrder(Long id) {
         RestaurantOrder order = findOrder(id);
@@ -202,4 +235,60 @@ public class OrderServiceImpl implements OrderService {
     private String getFullName(User user) {
         return user.getFirstName() + " " + user.getLastName();
     }
+
+    private String getCurrentUserEmail() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        return authentication.getName();
+    }
+    private boolean isAdminOrWaiter() {
+
+        return SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getAuthorities()
+                .stream()
+                .anyMatch(a ->
+                        a.getAuthority().equals("ROLE_ADMIN") ||
+                                a.getAuthority().equals("ROLE_WAITER")
+                );
+    }
+    private void validateStatusTransition(
+            OrderStatus currentStatus,
+            OrderStatus newStatus
+    ) {
+        if (currentStatus == newStatus) {
+            return;
+        }
+
+        boolean validTransition = switch (currentStatus) {
+            case NEW ->
+                    newStatus == OrderStatus.PREPARING ||
+                            newStatus == OrderStatus.CANCELLED;
+
+            case PREPARING ->
+                    newStatus == OrderStatus.READY ||
+                            newStatus == OrderStatus.CANCELLED;
+
+            case READY ->
+                    newStatus == OrderStatus.SERVED;
+
+            case SERVED ->
+                    newStatus == OrderStatus.PAID;
+
+            case PAID, CANCELLED -> false;
+        };
+
+        if (!validTransition) {
+            throw new IllegalArgumentException(
+                    "Invalid order status transition from "
+                            + currentStatus
+                            + " to "
+                            + newStatus
+            );
+        }
+    }
+
 }

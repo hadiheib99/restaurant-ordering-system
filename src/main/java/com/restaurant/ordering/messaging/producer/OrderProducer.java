@@ -12,13 +12,14 @@ public class OrderProducer {
 
     private final JmsTemplate jmsTemplate;
 
-    public void sendOrder(OrderMessage orderMessage) {
+    public void sendOrderEvent(OrderMessage orderMessage) {
 
         jmsTemplate.convertAndSend(
                 JmsConfig.KITCHEN_QUEUE,
                 orderMessage
         );
 
-        System.out.println("Order sent to kitchen: " + orderMessage.getOrderId());
+        System.out.println("Order event sent: " + orderMessage.getOrderId()
+                + " | Status: " + orderMessage.getStatus());
     }
 }

@@ -1,5 +1,12 @@
 package com.restaurant.ordering.security.config;
 
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 import com.restaurant.ordering.security.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -52,7 +59,7 @@ public class SecurityConfig {
 
         http
                 .csrf(csrf -> csrf.disable())
-
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
@@ -108,6 +115,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/orders/**")
                         .hasRole("ADMIN")
 
+                        .requestMatchers(HttpMethod.PATCH, "/api/orders/**")
+                        .hasAnyRole("ADMIN", "WAITER", "CHEF")
                         // Everything else requires login
                         .anyRequest().authenticated()
                 )
@@ -140,5 +149,34 @@ public class SecurityConfig {
         );
 
         return authenticationConverter;
+    }
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(
+                List.of("http://localhost:4200")
+        );
+
+        configuration.setAllowedMethods(
+                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+        );
+
+        configuration.setAllowedHeaders(
+                List.of("Authorization", "Content-Type")
+        );
+
+        configuration.setExposedHeaders(
+                List.of("Authorization")
+        );
+
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
     }
 }
