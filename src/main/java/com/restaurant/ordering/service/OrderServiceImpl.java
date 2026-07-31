@@ -9,7 +9,8 @@ import com.restaurant.ordering.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.restaurant.ordering.messaging.producer.OrderProducer;
+import com.restaurant.ordering.messaging.dto.OrderMessage;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -21,7 +22,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
     private final MealRepository mealRepository;
-
+    private final OrderProducer orderProducer;
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getAllOrders() {
@@ -122,6 +123,16 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalPrice(total);
 
         RestaurantOrder savedOrder = orderRepository.save(order);
+        OrderMessage message = new OrderMessage(
+                savedOrder.getId(),
+                savedOrder.getCustomer().getId(),
+                savedOrder.getCustomer().getFirstName() + " " +
+                        savedOrder.getCustomer().getLastName(),
+                savedOrder.getTotalPrice(),
+                savedOrder.getStatus().name()
+        );
+
+        orderProducer.sendOrder(message);
         return toResponse(savedOrder);
     }
 
