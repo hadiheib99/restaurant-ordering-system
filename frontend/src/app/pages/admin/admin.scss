@@ -1,0 +1,66 @@
+.admin-page {
+  min-height: 100vh;
+  padding: 3rem;
+  background: #f3f4f6;
+}
+
+header {
+  max-width: 1200px;
+  margin: 0 auto 2rem;
+}
+
+header h1 {
+  margin-bottom: 0.25rem;
+  font-size: 2.5rem;
+}
+
+header p {
+  margin-top: 0;
+  color: #64748b;
+}
+
+.dashboard-grid {
+  max-width: 1200px;
+  margin: auto;
+
+  display: grid;
+  grid-template-columns:
+    repeat(auto-fit, minmax(240px, 1fr));
+
+  gap: 1.5rem;
+}
+
+.dashboard-card {
+  display: block;
+
+  padding: 2rem;
+
+  background: white;
+  border-radius: 1rem;
+
+  text-decoration: none;
+  color: inherit;
+
+  box-shadow:
+    0 5px 20px rgb(0 0 0 / 8%);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-4px);
+
+  box-shadow:
+    0 10px 30px rgb(0 0 0 / 12%);
+}
+
+.dashboard-card h2 {
+  margin-top: 0;
+}
+
+.dashboard-card p {
+  margin-bottom: 0;
+  color: #64748b;
+}

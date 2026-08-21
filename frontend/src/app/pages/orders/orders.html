@@ -1,0 +1,84 @@
+<main class="orders-page">
+
+  <header>
+    <h1>Orders</h1>
+    <p>Manage restaurant orders</p>
+  </header>
+
+  @if (loading()) {
+
+    <p>Loading orders...</p>
+
+  } @else if (errorMessage()) {
+
+    <p class="error">
+      {{ errorMessage() }}
+    </p>
+
+  } @else {
+
+    <div class="orders-grid">
+
+      @for (order of orders(); track order.id) {
+
+        <article class="order-card">
+
+          <div class="order-header">
+
+            <div>
+              <h2>Order #{{ order.id }}</h2>
+              <span>{{ order.customerName }}</span>
+            </div>
+
+            <span class="status">
+              {{ order.status }}
+            </span>
+
+          </div>
+
+          <div class="items">
+
+            @for (item of order.items; track item.id) {
+
+              <div class="item">
+                <span>
+                  {{ item.mealName }}
+                  × {{ item.quantity }}
+                </span>
+
+                <strong>
+                  ₪{{ item.subtotal }}
+                </strong>
+              </div>
+
+            }
+
+          </div>
+
+          <div class="order-footer">
+
+            <strong>
+              Total: ₪{{ order.totalPrice }}
+            </strong>
+
+            @if (nextStatus(order.status); as next) {
+
+              <button
+                type="button"
+                (click)="updateStatus(order, next)">
+                Move to {{ next }}
+              </button>
+
+            }
+
+          </div>
+
+        </article>
+
+      }
+
+    </div>
+
+  }
+
+</main>
