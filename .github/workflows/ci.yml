@@ -103,15 +103,26 @@ jobs:
 
       - name: Authenticate seeded customer
         run: |
-          status=$(curl -sS -o /tmp/login.json -w "%{http_code}" \
-            -H "Content-Type: application/json" \
-            -d '{"email":"customer1@restaurant.com","password":"Customer123"}' \
-            http://localhost:8080/api/auth/login)
-          test "$status" = "200"
-          token=$(jq -r '.token' /tmp/login.json)
-          test -n "$token"
-          test "$token" != "null"
-          echo "CUSTOMER_TOKEN=$token" >> "$GITHUB_ENV"
+          for i in {1..20}; do
+            status=$(curl -sS -o /tmp/login.json -w "%{http_code}" \
+              -H "Content-Type: application/json" \
+              -d '{"email":"customer1@restaurant.com","password":"Customer123"}' \
+              http://localhost:8080/api/auth/login)
+
+            if [ "$status" = "200" ]; then
+              token=$(jq -r '.token' /tmp/login.json)
+              if [ -n "$token" ] && [ "$token" != "null" ]; then
+                echo "CUSTOMER_TOKEN=$token" >> "$GITHUB_ENV"
+                exit 0
+              fi
+            fi
+
+            sleep 1
+          done
+
+          cat /tmp/login.json || true
+          cat /tmp/restaurant-app.log
+          exit 1
 
       - name: Verify current user and create order
         run: |
