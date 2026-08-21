@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { MealService } from '../../core/services/meal';
 import { CartService } from '../../core/services/cart';
 import { Meal } from '../../core/models/meal';
@@ -15,6 +16,7 @@ export class Menu implements OnInit {
   private readonly mealService = inject(MealService);
   private readonly orderService = inject(OrderService);
   private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   readonly cartService = inject(CartService);
 
   readonly meals = signal<Meal[]>([]);
@@ -79,5 +81,15 @@ export class Menu implements OnInit {
         this.errorMessage.set('Could not identify the logged-in customer. Please log in again.');
       }
     });
+  }
+
+  viewOrders(): void {
+    void this.router.navigate(['/orders']);
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.cartService.clear();
+    void this.router.navigate(['/login']);
   }
 }
