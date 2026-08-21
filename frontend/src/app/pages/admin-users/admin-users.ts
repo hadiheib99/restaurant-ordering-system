@@ -46,7 +46,10 @@ export class AdminUsers {
       return;
     }
 
-    if (this.form.password.length < 6) {
+    const editing = this.editingId() !== null;
+    const passwordProvided = this.form.password.trim().length > 0;
+
+    if ((!editing || passwordProvided) && this.form.password.length < 6) {
       this.errorMessage.set('Password must contain at least 6 characters.');
       return;
     }
@@ -70,7 +73,7 @@ export class AdminUsers {
         this.saving.set(false);
         this.errorMessage.set(
           error.status === 400
-            ? 'Could not save user. Check that username and email are unique.'
+            ? 'Could not save user. Check the fields and make sure username and email are unique.'
             : 'Could not save user.'
         );
       }
