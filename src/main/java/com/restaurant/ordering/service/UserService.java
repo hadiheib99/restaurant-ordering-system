@@ -36,6 +36,14 @@ public class UserService {
         return toResponse(findUser(id));
     }
 
+    public UserResponse getUserByEmail(String email) {
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "User not found with email: " + email
+                ));
+        return toResponse(user);
+    }
+
     public List<UserResponse> getUsersByRole(Role role) {
         return userRepository.findByRole(role)
                 .stream()
