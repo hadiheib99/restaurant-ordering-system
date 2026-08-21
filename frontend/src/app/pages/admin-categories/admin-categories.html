@@ -1,1 +1,65 @@
-<p>admin-categories works!</p>
+<main class="admin-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Restaurant Admin</p>
+      <h1>Manage Categories</h1>
+      <p>Create and organize the menu categories.</p>
+    </div>
+    <a href="/admin">Back to Admin</a>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="error-message">{{ errorMessage() }}</div>
+  }
+
+  <section class="editor-card">
+    <h2>{{ editingId() === null ? 'Add Category' : 'Edit Category' }}</h2>
+
+    <form (ngSubmit)="saveCategory()" class="category-form">
+      <label>
+        Name
+        <input name="name" [(ngModel)]="form.name" required placeholder="e.g. Pizza">
+      </label>
+
+      <label>
+        Description
+        <textarea name="description" [(ngModel)]="form.description" rows="3" placeholder="Category description"></textarea>
+      </label>
+
+      <div class="actions">
+        <button class="primary" type="submit" [disabled]="saving()">
+          {{ saving() ? 'Saving...' : (editingId() === null ? 'Add Category' : 'Save Changes') }}
+        </button>
+        @if (editingId() !== null) {
+          <button type="button" (click)="cancelEdit()">Cancel</button>
+        }
+      </div>
+    </form>
+  </section>
+
+  <section class="list-card">
+    <div class="section-header">
+      <h2>Categories</h2>
+      <span>{{ categories().length }} total</span>
+    </div>
+
+    @if (loading()) {
+      <p>Loading categories...</p>
+    } @else if (categories().length === 0) {
+      <p class="empty">No categories yet.</p>
+    } @else {
+      <div class="category-grid">
+        @for (category of categories(); track category.id) {
+          <article class="category-card">
+            <h3>{{ category.name }}</h3>
+            <p>{{ category.description || 'No description' }}</p>
+            <div class="actions">
+              <button type="button" (click)="editCategory(category)">Edit</button>
+              <button type="button" class="danger" (click)="deleteCategory(category)">Delete</button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</main>
