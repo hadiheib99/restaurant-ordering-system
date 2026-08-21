@@ -1,0 +1,182 @@
+:host {
+  display: block;
+}
+
+.menu-page {
+  min-height: 100vh;
+  padding: 3rem;
+  background: #f3f4f6;
+}
+
+header {
+  max-width: 1200px;
+  margin: 0 auto 2rem;
+}
+
+header h1 {
+  margin-bottom: 0.25rem;
+  font-size: 2.5rem;
+}
+
+header p {
+  margin-top: 0;
+  color: #64748b;
+}
+
+.meal-grid {
+  max-width: 1200px;
+  margin: auto;
+
+  display: grid;
+  grid-template-columns:
+    repeat(auto-fill, minmax(260px, 1fr));
+
+  gap: 1.5rem;
+}
+
+.meal-card {
+  background: white;
+  border-radius: 1rem;
+  overflow: hidden;
+
+  box-shadow:
+    0 5px 20px rgb(0 0 0 / 8%);
+}
+
+.meal-content {
+  padding: 1.5rem;
+}
+
+.category {
+  font-size: 0.8rem;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+h2 {
+  margin: 0.5rem 0;
+}
+
+.description {
+  min-height: 45px;
+  color: #64748b;
+}
+
+.meal-footer {
+  margin-top: 1.5rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.meal-footer strong {
+  font-size: 1.3rem;
+}
+
+button {
+  padding: 0.7rem 1rem;
+
+  border: none;
+  border-radius: 0.5rem;
+
+  cursor: pointer;
+}
+
+.unavailable,
+.error {
+  color: #b91c1c;
+}
+.cart {
+  max-width: 1200px;
+  margin: 3rem auto 0;
+  padding: 2rem;
+
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 5px 20px rgb(0 0 0 / 8%);
+}
+
+.cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 1.5rem;
+}
+
+.cart-header h2 {
+  margin: 0;
+}
+
+.cart-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 1.5rem;
+
+  padding: 1rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.cart-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cart-item-info span {
+  color: #64748b;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.quantity-controls button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+
+.item-total {
+  min-width: 70px;
+  text-align: right;
+}
+
+.remove-button,
+.clear-button {
+  color: #b91c1c;
+}
+
+.cart-total {
+  display: flex;
+  justify-content: space-between;
+
+  margin-top: 1.5rem;
+
+  font-size: 1.4rem;
+}
+
+.place-order-button {
+  width: 100%;
+  margin-top: 1.5rem;
+
+  padding: 1rem;
+
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+@media (max-width: 700px) {
+
+  .cart-item {
+    grid-template-columns: 1fr;
+  }
+
+  .item-total {
+    text-align: left;
+  }
+}

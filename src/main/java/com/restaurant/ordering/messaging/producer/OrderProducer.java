@@ -19,7 +19,11 @@ public class OrderProducer {
                 orderMessage
         );
 
-        System.out.println("Order event sent: " + orderMessage.getOrderId()
-                + " | Status: " + orderMessage.getStatus());
+        System.out.println(
+                "Order event sent: "
+                        + orderMessage.getOrderId()
+                        + " | Status: "
+                        + orderMessage.getStatus()
+        );
     }
 }
