@@ -11,7 +11,7 @@ export const routes: Routes = [
   {
     path: 'menu',
     canActivate: [roleGuard],
-    data: { roles: ['CUSTOMER', 'ADMIN', 'WAITER'] },
+    data: { roles: ['CUSTOMER'] },
     loadComponent: () =>
       import('./pages/menu/menu')
         .then(component => component.Menu)
