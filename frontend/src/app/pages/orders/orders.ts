@@ -21,6 +21,7 @@ export class Orders implements OnInit {
   readonly errorMessage = signal('');
   readonly role = this.authService.getRole();
   readonly canManage = this.role !== 'CUSTOMER';
+  readonly canDelete = this.role === 'ADMIN';
 
   ngOnInit(): void {
     this.loadOrders();
@@ -56,6 +57,22 @@ export class Orders implements OnInit {
       error: error => {
         console.error(error);
         alert('Could not update order status');
+      }
+    });
+  }
+
+  deleteOrder(order: Order): void {
+    if (!this.canDelete || !confirm(`Delete order #${order.id}?`)) {
+      return;
+    }
+
+    this.orderService.deleteOrder(order.id).subscribe({
+      next: () => this.orders.update(orders =>
+        orders.filter(current => current.id !== order.id)
+      ),
+      error: error => {
+        console.error(error);
+        alert('Could not delete the order');
       }
     });
   }
