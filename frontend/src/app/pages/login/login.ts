@@ -27,6 +27,12 @@ export class Login {
     password: ['', [Validators.required]]
   });
 
+  constructor() {
+    if (this.authService.isLoggedIn()) {
+      void this.router.navigateByUrl(this.authService.defaultRoute());
+    }
+  }
+
   submit(): void {
     if (this.loginForm.invalid || this.loading()) {
       this.loginForm.markAllAsTouched();
@@ -39,7 +45,7 @@ export class Login {
     this.authService.login(this.loginForm.getRawValue()).subscribe({
       next: () => {
         this.loading.set(false);
-        void this.router.navigate(['/menu']);
+        void this.router.navigateByUrl(this.authService.defaultRoute());
       },
       error: error => {
         this.loading.set(false);
