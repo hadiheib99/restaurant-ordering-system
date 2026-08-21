@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { Order } from '../models/order';
+
 interface OrderItemRequest {
   mealId: number;
   quantity: number;
@@ -20,20 +21,23 @@ export interface OrderRequest {
 export class OrderService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = 'http://localhost:8080/api/orders';
+
   getOrders(): Observable<Order[]> {
     return this.http.get<Order[]>(this.apiUrl);
   }
 
-  updateStatus(
-    orderId: number,
-    status: string
-  ): Observable<Order> {
+  createOrder(request: OrderRequest): Observable<Order> {
+    return this.http.post<Order>(this.apiUrl, request);
+  }
+
+  updateStatus(orderId: number, status: string): Observable<Order> {
     return this.http.patch<Order>(
       `${this.apiUrl}/${orderId}/status?value=${status}`,
       {}
-    );}
-  createOrder(request: OrderRequest): Observable<any> {
-    return this.http.post(this.apiUrl, request);
+    );
+  }
 
+  deleteOrder(orderId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${orderId}`);
   }
 }
