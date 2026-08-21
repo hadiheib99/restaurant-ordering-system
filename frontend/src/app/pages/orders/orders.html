@@ -48,11 +48,22 @@
           <div class="order-footer">
             <strong>Total: ₪{{ order.totalPrice }}</strong>
 
-            @if (canManage && nextStatus(order.status); as next) {
-              <button type="button" (click)="updateStatus(order, next)">
-                Move to {{ next }}
-              </button>
-            }
+            <div class="order-actions">
+              @if (canManage && nextStatus(order.status); as next) {
+                <button type="button" (click)="updateStatus(order, next)">
+                  Move to {{ next }}
+                </button>
+              }
+
+              @if (canDelete) {
+                <button
+                  type="button"
+                  class="danger"
+                  (click)="deleteOrder(order)">
+                  Delete
+                </button>
+              }
+            </div>
           </div>
         </article>
       }
