@@ -23,9 +23,14 @@
 
       <label>
         Password
-        <input name="password" [(ngModel)]="form.password" type="password" minlength="6" required>
+        <input
+          name="password"
+          [(ngModel)]="form.password"
+          type="password"
+          minlength="6"
+          [required]="editingId() === null">
         @if (editingId() !== null) {
-          <small>Enter a password to save this edit.</small>
+          <small>Leave blank to keep the current password.</small>
         }
       </label>
 
@@ -77,6 +82,8 @@
 
     @if (loading()) {
       <p>Loading users...</p>
+    } @else if (users().length === 0) {
+      <p>No users found.</p>
     } @else {
       <div class="table-wrap">
         <table>
