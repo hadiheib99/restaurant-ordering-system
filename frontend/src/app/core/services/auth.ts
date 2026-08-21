@@ -4,7 +4,7 @@ import { Observable, tap } from 'rxjs';
 
 import { LoginRequest } from '../models/login-request';
 import { LoginResponse } from '../models/login-response';
-import { UserRole } from '../models/user';
+import { User, UserRole } from '../models/user';
 
 interface JwtPayload {
   sub?: string;
@@ -29,6 +29,10 @@ export class AuthService {
           localStorage.setItem(this.tokenKey, response.token);
         })
       );
+  }
+
+  getCurrentUser(): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/me`);
   }
 
   getToken(): string | null {
