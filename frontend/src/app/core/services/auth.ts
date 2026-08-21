@@ -4,6 +4,13 @@ import { Observable, tap } from 'rxjs';
 
 import { LoginRequest } from '../models/login-request';
 import { LoginResponse } from '../models/login-response';
+import { User, UserRole } from '../models/user';
+
+interface JwtPayload {
+  sub?: string;
+  role?: UserRole;
+  exp?: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -24,15 +31,70 @@ export class AuthService {
       );
   }
 
+  getCurrentUser(): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/me`);
+  }
+
   getToken(): string | null {
     return localStorage.getItem(this.tokenKey);
   }
 
+  getRole(): UserRole | null {
+    return this.getPayload()?.role ?? null;
+  }
+
+  getEmail(): string | null {
+    return this.getPayload()?.sub ?? null;
+  }
+
   isLoggedIn(): boolean {
-    return this.getToken() !== null;
+    const payload = this.getPayload();
+    if (!payload || !payload.exp) {
+      return false;
+    }
+
+    const active = payload.exp * 1000 > Date.now();
+    if (!active) {
+      this.logout();
+    }
+    return active;
+  }
+
+  hasAnyRole(...roles: UserRole[]): boolean {
+    const role = this.getRole();
+    return role !== null && roles.includes(role);
+  }
+
+  defaultRoute(): string {
+    switch (this.getRole()) {
+      case 'ADMIN':
+        return '/admin';
+      case 'WAITER':
+      case 'CHEF':
+        return '/orders';
+      case 'CUSTOMER':
+      default:
+        return '/menu';
+    }
   }
 
   logout(): void {
     localStorage.removeItem(this.tokenKey);
+  }
+
+  private getPayload(): JwtPayload | null {
+    const token = this.getToken();
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const payloadPart = token.split('.')[1];
+      const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+      return JSON.parse(atob(padded)) as JwtPayload;
+    } catch {
+      return null;
+    }
   }
 }

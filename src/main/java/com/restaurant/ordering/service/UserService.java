@@ -2,6 +2,7 @@ package com.restaurant.ordering.service;
 
 import com.restaurant.ordering.dto.UserRequest;
 import com.restaurant.ordering.dto.UserResponse;
+import com.restaurant.ordering.exception.ResourceNotFoundException;
 import com.restaurant.ordering.model.Role;
 import com.restaurant.ordering.model.User;
 import com.restaurant.ordering.repository.UserRepository;
@@ -35,6 +36,14 @@ public class UserService {
         return toResponse(findUser(id));
     }
 
+    public UserResponse getUserByEmail(String email) {
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "User not found with email: " + email
+                ));
+        return toResponse(user);
+    }
+
     public List<UserResponse> getUsersByRole(Role role) {
         return userRepository.findByRole(role)
                 .stream()
@@ -44,6 +53,7 @@ public class UserService {
 
     public UserResponse createUser(UserRequest request) {
         validateUniqueFields(request.getUsername(), request.getEmail(), null);
+        validateNewPassword(request.getPassword());
 
         User user = new User();
         updateUserFields(user, request);
@@ -56,10 +66,10 @@ public class UserService {
         User user = findUser(id);
 
         validateUniqueFields(request.getUsername(), request.getEmail(), user);
-
         updateUserFields(user, request);
 
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            validateNewPassword(request.getPassword());
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
 
@@ -80,8 +90,17 @@ public class UserService {
 
     private User findUser(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "User not found with id: " + id
+                ));
+    }
+
+    private void validateNewPassword(String password) {
+        if (password == null || password.isBlank() || password.length() < 6) {
+            throw new IllegalArgumentException(
+                    "Password must contain at least 6 characters"
+            );
+        }
     }
 
     private void validateUniqueFields(

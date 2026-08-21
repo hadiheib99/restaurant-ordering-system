@@ -1,1 +1,132 @@
-<p>admin-users works!</p>
+<main class="admin-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Restaurant Admin</p>
+      <h1>Manage Users</h1>
+      <p>Create staff and customer accounts, change roles and disable access.</p>
+    </div>
+    <a href="/admin">Back to Admin</a>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="error-message">{{ errorMessage() }}</div>
+  }
+
+  <section class="editor-card">
+    <h2>{{ editingId() === null ? 'Add User' : 'Edit User' }}</h2>
+
+    <form (ngSubmit)="saveUser()" class="user-form">
+      <label>
+        Username
+        <input name="username" [(ngModel)]="form.username" required>
+      </label>
+
+      <label>
+        Password
+        <input
+          name="password"
+          [(ngModel)]="form.password"
+          type="password"
+          minlength="6"
+          [required]="editingId() === null">
+        @if (editingId() !== null) {
+          <small>Leave blank to keep the current password.</small>
+        }
+      </label>
+
+      <label>
+        First name
+        <input name="firstName" [(ngModel)]="form.firstName" required>
+      </label>
+
+      <label>
+        Last name
+        <input name="lastName" [(ngModel)]="form.lastName" required>
+      </label>
+
+      <label>
+        Email
+        <input name="email" [(ngModel)]="form.email" type="email" required>
+      </label>
+
+      <label>
+        Phone
+        <input name="phone" [(ngModel)]="form.phone">
+      </label>
+
+      <label>
+        Role
+        <select name="role" [(ngModel)]="form.role">
+          @for (role of roles; track role) {
+            <option [ngValue]="role">{{ role }}</option>
+          }
+        </select>
+      </label>
+
+      <div class="form-actions">
+        <button class="primary" type="submit" [disabled]="saving()">
+          {{ saving() ? 'Saving...' : (editingId() === null ? 'Add User' : 'Save Changes') }}
+        </button>
+        @if (editingId() !== null) {
+          <button type="button" (click)="cancelEdit()">Cancel</button>
+        }
+      </div>
+    </form>
+  </section>
+
+  <section class="list-card">
+    <div class="section-header">
+      <h2>Users</h2>
+      <span>{{ users().length }} total</span>
+    </div>
+
+    @if (loading()) {
+      <p>Loading users...</p>
+    } @else if (users().length === 0) {
+      <p>No users found.</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Contact</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of users(); track user.id) {
+              <tr>
+                <td>
+                  <strong>{{ user.firstName }} {{ user.lastName }}</strong>
+                  <span>@{{ user.username }}</span>
+                </td>
+                <td>
+                  <span>{{ user.email }}</span>
+                  <span>{{ user.phone || 'No phone' }}</span>
+                </td>
+                <td><span class="role">{{ user.role }}</span></td>
+                <td>
+                  <span class="status" [class.disabled]="!user.enabled">
+                    {{ user.enabled ? 'Enabled' : 'Disabled' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <button type="button" (click)="editUser(user)">Edit</button>
+                    <button type="button" (click)="toggleEnabled(user)">
+                      {{ user.enabled ? 'Disable' : 'Enable' }}
+                    </button>
+                    <button type="button" class="danger" (click)="deleteUser(user)">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</main>

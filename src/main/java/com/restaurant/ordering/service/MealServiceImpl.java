@@ -6,19 +6,19 @@ import com.restaurant.ordering.exception.ResourceNotFoundException;
 import com.restaurant.ordering.model.Category;
 import com.restaurant.ordering.model.Meal;
 import com.restaurant.ordering.repository.MealRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class MealServiceImpl implements MealService {
 
-    @Autowired
-    private MealRepository mealRepository;
-
-    @Autowired
-    private CategoryService categoryService;
+    private final MealRepository mealRepository;
+    private final CategoryService categoryService;
 
     @Override
     public MealResponse createMeal(MealRequest mealRequest) {
@@ -31,45 +31,45 @@ public class MealServiceImpl implements MealService {
         meal.setCategory(category);
         meal.setAvailable(mealRequest.getAvailable() != null ? mealRequest.getAvailable() : true);
 
-        Meal savedMeal = mealRepository.save(meal);
-        return convertToResponse(savedMeal);
+        return convertToResponse(mealRepository.save(meal));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public MealResponse getMealById(Long id) {
-        Meal meal = mealRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Meal not found with id: " + id));
-        return convertToResponse(meal);
+        return convertToResponse(findMeal(id));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<MealResponse> getAllMeals() {
         return mealRepository.findAll()
                 .stream()
                 .map(this::convertToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<MealResponse> getMealsByCategory(Long categoryId) {
         return mealRepository.findByCategoryId(categoryId)
                 .stream()
                 .map(this::convertToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<MealResponse> getAvailableMeals() {
         return mealRepository.findByAvailableTrue()
                 .stream()
                 .map(this::convertToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     public MealResponse updateMeal(Long id, MealRequest mealRequest) {
-        Meal meal = mealRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Meal not found with id: " + id));
+        Meal meal = findMeal(id);
 
         if (mealRequest.getName() != null) {
             meal.setName(mealRequest.getName());
@@ -81,23 +81,25 @@ public class MealServiceImpl implements MealService {
             meal.setPrice(mealRequest.getPrice());
         }
         if (mealRequest.getCategoryId() != null) {
-            Category category = categoryService.getCategoryById(mealRequest.getCategoryId());
-            meal.setCategory(category);
+            meal.setCategory(categoryService.getCategoryById(mealRequest.getCategoryId()));
         }
         if (mealRequest.getAvailable() != null) {
             meal.setAvailable(mealRequest.getAvailable());
         }
 
-        Meal updatedMeal = mealRepository.save(meal);
-        return convertToResponse(updatedMeal);
+        return convertToResponse(mealRepository.save(meal));
     }
 
     @Override
     public void deleteMeal(Long id) {
-        if (!mealRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Meal not found with id: " + id);
-        }
-        mealRepository.deleteById(id);
+        mealRepository.delete(findMeal(id));
+    }
+
+    private Meal findMeal(Long id) {
+        return mealRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Meal not found with id: " + id
+                ));
     }
 
     private MealResponse convertToResponse(Meal meal) {
@@ -112,4 +114,3 @@ public class MealServiceImpl implements MealService {
         );
     }
 }
-

@@ -17,7 +17,6 @@ public class OrderRequest {
 
     private Long waiterId;
 
-    @Valid
     @NotEmpty(message = "The order must contain at least one item")
-    private List<OrderItemRequest> items;
+    private List<@Valid OrderItemRequest> items;
 }

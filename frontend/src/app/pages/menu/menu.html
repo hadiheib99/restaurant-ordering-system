@@ -1,169 +1,100 @@
 <main class="menu-page">
-
   <header>
     <div>
       <h1>Restaurant Menu</h1>
       <p>Choose something delicious</p>
     </div>
+
+    <div class="header-actions">
+      <button type="button" (click)="viewOrders()">My Orders</button>
+      <button type="button" (click)="logout()">Logout</button>
+    </div>
   </header>
 
   @if (loading()) {
-
     <p>Loading menu...</p>
-
   } @else if (errorMessage()) {
-
-    <p class="error">
-      {{ errorMessage() }}
-    </p>
-
+    <p class="error">{{ errorMessage() }}</p>
   } @else {
-
     <div class="meal-grid">
-
       @for (meal of meals(); track meal.id) {
-
         <article class="meal-card">
-
           <div class="meal-content">
-
-            <span class="category">
-              {{ meal.categoryName }}
-            </span>
-
+            <span class="category">{{ meal.categoryName }}</span>
             <h2>{{ meal.name }}</h2>
-
-            <p class="description">
-              {{ meal.description }}
-            </p>
+            <p class="description">{{ meal.description }}</p>
 
             <div class="meal-footer">
-
-              <strong>
-                ₪{{ meal.price }}
-              </strong>
+              <strong>₪{{ meal.price }}</strong>
 
               @if (meal.available) {
-
-                <button
-                  type="button"
-                  (click)="addToCart(meal)">
+                <button type="button" (click)="addToCart(meal)">
                   Add to Order
                 </button>
-
               } @else {
-
-                <span class="unavailable">
-                  Unavailable
-                </span>
-
+                <span class="unavailable">Unavailable</span>
               }
-
             </div>
-
           </div>
-
         </article>
-
       }
-
     </div>
+
     @if (cartService.items().length > 0) {
-
       <section class="cart">
-
         <div class="cart-header">
-
           <div>
             <h2>Your Order</h2>
-
-            <span>
-          {{ cartService.count() }} item(s)
-        </span>
+            <span>{{ cartService.count() }} item(s)</span>
           </div>
 
           <button
             type="button"
             class="clear-button"
+            [disabled]="placingOrder()"
             (click)="cartService.clear()">
             Clear cart
           </button>
-
         </div>
 
-        @for (
-          item of cartService.items();
-          track item.meal.id
-          ) {
-
+        @for (item of cartService.items(); track item.meal.id) {
           <div class="cart-item">
-
             <div class="cart-item-info">
-
-              <strong>
-                {{ item.meal.name }}
-              </strong>
-
-              <span>
-            ₪{{ item.meal.price }} each
-          </span>
-
+              <strong>{{ item.meal.name }}</strong>
+              <span>₪{{ item.meal.price }} each</span>
             </div>
 
             <div class="quantity-controls">
-
-              <button
-                type="button"
-                (click)="cartService.decrease(item.meal.id)">
-                −
-              </button>
-
-              <span>
-            {{ item.quantity }}
-          </span>
-
-              <button
-                type="button"
-                (click)="cartService.increase(item.meal.id)">
-                +
-              </button>
-
+              <button type="button" [disabled]="placingOrder()" (click)="cartService.decrease(item.meal.id)">−</button>
+              <span>{{ item.quantity }}</span>
+              <button type="button" [disabled]="placingOrder()" (click)="cartService.increase(item.meal.id)">+</button>
             </div>
 
-            <strong class="item-total">
-              ₪{{ item.meal.price * item.quantity }}
-            </strong>
+            <strong class="item-total">₪{{ item.meal.price * item.quantity }}</strong>
 
             <button
               type="button"
               class="remove-button"
+              [disabled]="placingOrder()"
               (click)="cartService.remove(item.meal.id)">
               Remove
             </button>
-
           </div>
-
         }
 
         <div class="cart-total">
-
           <span>Total</span>
-
-          <strong>
-            ₪{{ cartService.total() }}
-          </strong>
-
+          <strong>₪{{ cartService.total() }}</strong>
         </div>
 
         <button
           type="button"
           class="place-order-button"
+          [disabled]="placingOrder()"
           (click)="placeOrder()">
-          Place Order
+          {{ placingOrder() ? 'Placing Order...' : 'Place Order' }}
         </button>
-
       </section>
-
     }
   }
 </main>
