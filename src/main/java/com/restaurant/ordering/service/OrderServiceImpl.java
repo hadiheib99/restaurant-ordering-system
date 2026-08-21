@@ -2,20 +2,21 @@ package com.restaurant.ordering.service;
 
 import com.restaurant.ordering.dto.*;
 import com.restaurant.ordering.exception.ResourceNotFoundException;
+import com.restaurant.ordering.messaging.dto.OrderMessage;
+import com.restaurant.ordering.messaging.producer.OrderProducer;
 import com.restaurant.ordering.model.*;
 import com.restaurant.ordering.repository.MealRepository;
 import com.restaurant.ordering.repository.OrderRepository;
 import com.restaurant.ordering.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.restaurant.ordering.messaging.producer.OrderProducer;
-import com.restaurant.ordering.messaging.dto.OrderMessage;
-import java.math.BigDecimal;
-import java.util.List;
-
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -30,19 +31,15 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getAllOrders() {
-
-        if (isAdminOrWaiter()) {
-
+        if (isStaff()) {
             return orderRepository.findAll()
                     .stream()
                     .map(this::toResponse)
                     .toList();
         }
 
-        String email = getCurrentUserEmail();
-
         return orderRepository
-                .findByCustomerEmail(email)
+                .findByCustomerEmail(getCurrentUserEmail())
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -51,12 +48,15 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public OrderResponse getOrderById(Long id) {
-        return toResponse(findOrder(id));
+        RestaurantOrder order = findOrder(id);
+        ensureCanView(order);
+        return toResponse(order);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getOrdersByStatus(OrderStatus status) {
+        ensureStaff();
         return orderRepository.findByStatus(status)
                 .stream()
                 .map(this::toResponse)
@@ -66,6 +66,13 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getOrdersByCustomer(Long customerId) {
+        if (!isStaff()) {
+            User customer = findUser(customerId);
+            if (!customer.getEmail().equalsIgnoreCase(getCurrentUserEmail())) {
+                throw new AccessDeniedException("You may only view your own orders");
+            }
+        }
+
         return orderRepository.findByCustomerId(customerId)
                 .stream()
                 .map(this::toResponse)
@@ -75,6 +82,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getOrdersByWaiter(Long waiterId) {
+        ensureStaff();
         return orderRepository.findByWaiterId(waiterId)
                 .stream()
                 .map(this::toResponse)
@@ -89,6 +97,11 @@ public class OrderServiceImpl implements OrderService {
             throw new IllegalArgumentException(
                     "The selected user must have the CUSTOMER role"
             );
+        }
+
+        if (hasRole("ROLE_CUSTOMER") &&
+                !customer.getEmail().equalsIgnoreCase(getCurrentUserEmail())) {
+            throw new AccessDeniedException("Customers may only create orders for themselves");
         }
 
         User waiter = null;
@@ -118,7 +131,7 @@ public class OrderServiceImpl implements OrderService {
                             "Meal not found with ID: " + itemRequest.getMealId()
                     ));
 
-            if (!Boolean.TRUE.equals(meal.getAvailable())){
+            if (!Boolean.TRUE.equals(meal.getAvailable())) {
                 throw new IllegalArgumentException(
                         "Meal is not available: " + meal.getName()
                 );
@@ -132,51 +145,29 @@ public class OrderServiceImpl implements OrderService {
 
             item.calculateSubtotal();
             order.addItem(item);
-
             total = total.add(item.getSubtotal());
         }
 
         order.setTotalPrice(total);
 
         RestaurantOrder savedOrder = orderRepository.save(order);
-        OrderMessage message = new OrderMessage(
-                savedOrder.getId(),
-                savedOrder.getCustomer().getId(),
-                savedOrder.getCustomer().getFirstName() + " " +
-                        savedOrder.getCustomer().getLastName(),
-                savedOrder.getTotalPrice(),
-                savedOrder.getStatus().name()
-        );
+        sendOrderEvent(savedOrder);
 
-        orderProducer.sendOrderEvent(message);
         return toResponse(savedOrder);
     }
 
     @Override
-
-
     public OrderResponse updateStatus(Long id, OrderStatus newStatus) {
-
         RestaurantOrder order = findOrder(id);
-
         validateStatusTransition(order.getStatus(), newStatus);
-
         order.setStatus(newStatus);
 
         RestaurantOrder savedOrder = orderRepository.save(order);
-
-        OrderMessage message = new OrderMessage(
-                savedOrder.getId(),
-                savedOrder.getCustomer().getId(),
-                getFullName(savedOrder.getCustomer()),
-                savedOrder.getTotalPrice(),
-                savedOrder.getStatus().name()
-        );
-
-        orderProducer.sendOrderEvent(message);
+        sendOrderEvent(savedOrder);
 
         return toResponse(savedOrder);
     }
+
     @Override
     public void deleteOrder(Long id) {
         RestaurantOrder order = findOrder(id);
@@ -197,6 +188,54 @@ public class OrderServiceImpl implements OrderService {
                 ));
     }
 
+    private void ensureCanView(RestaurantOrder order) {
+        if (isStaff()) {
+            return;
+        }
+
+        if (!order.getCustomer().getEmail().equalsIgnoreCase(getCurrentUserEmail())) {
+            throw new AccessDeniedException("You may only view your own orders");
+        }
+    }
+
+    private void ensureStaff() {
+        if (!isStaff()) {
+            throw new AccessDeniedException("This operation is only available to restaurant staff");
+        }
+    }
+
+    private boolean isStaff() {
+        return hasRole("ROLE_ADMIN") ||
+                hasRole("ROLE_WAITER") ||
+                hasRole("ROLE_CHEF");
+    }
+
+    private boolean hasRole(String role) {
+        return SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getAuthorities()
+                .stream()
+                .anyMatch(authority -> authority.getAuthority().equals(role));
+    }
+
+    private String getCurrentUserEmail() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getName();
+    }
+
+    private void sendOrderEvent(RestaurantOrder order) {
+        OrderMessage message = new OrderMessage(
+                order.getId(),
+                order.getCustomer().getId(),
+                getFullName(order.getCustomer()),
+                order.getTotalPrice(),
+                order.getStatus().name()
+        );
+        orderProducer.sendOrderEvent(message);
+    }
+
     private OrderResponse toResponse(RestaurantOrder order) {
         List<OrderItemResponse> itemResponses = order.getItems()
                 .stream()
@@ -214,16 +253,8 @@ public class OrderServiceImpl implements OrderService {
                 .id(order.getId())
                 .customerId(order.getCustomer().getId())
                 .customerName(getFullName(order.getCustomer()))
-                .waiterId(
-                        order.getWaiter() != null
-                                ? order.getWaiter().getId()
-                                : null
-                )
-                .waiterName(
-                        order.getWaiter() != null
-                                ? getFullName(order.getWaiter())
-                                : null
-                )
+                .waiterId(order.getWaiter() != null ? order.getWaiter().getId() : null)
+                .waiterName(order.getWaiter() != null ? getFullName(order.getWaiter()) : null)
                 .status(order.getStatus())
                 .totalPrice(order.getTotalPrice())
                 .createdAt(order.getCreatedAt())
@@ -236,25 +267,6 @@ public class OrderServiceImpl implements OrderService {
         return user.getFirstName() + " " + user.getLastName();
     }
 
-    private String getCurrentUserEmail() {
-
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        return authentication.getName();
-    }
-    private boolean isAdminOrWaiter() {
-
-        return SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getAuthorities()
-                .stream()
-                .anyMatch(a ->
-                        a.getAuthority().equals("ROLE_ADMIN") ||
-                                a.getAuthority().equals("ROLE_WAITER")
-                );
-    }
     private void validateStatusTransition(
             OrderStatus currentStatus,
             OrderStatus newStatus
@@ -272,12 +284,8 @@ public class OrderServiceImpl implements OrderService {
                     newStatus == OrderStatus.READY ||
                             newStatus == OrderStatus.CANCELLED;
 
-            case READY ->
-                    newStatus == OrderStatus.SERVED;
-
-            case SERVED ->
-                    newStatus == OrderStatus.PAID;
-
+            case READY -> newStatus == OrderStatus.SERVED;
+            case SERVED -> newStatus == OrderStatus.PAID;
             case PAID, CANCELLED -> false;
         };
 
@@ -290,5 +298,4 @@ public class OrderServiceImpl implements OrderService {
             );
         }
     }
-
 }
