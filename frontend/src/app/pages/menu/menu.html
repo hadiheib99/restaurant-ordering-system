@@ -4,6 +4,11 @@
       <h1>Restaurant Menu</h1>
       <p>Choose something delicious</p>
     </div>
+
+    <div class="header-actions">
+      <button type="button" (click)="viewOrders()">My Orders</button>
+      <button type="button" (click)="logout()">Logout</button>
+    </div>
   </header>
 
   @if (loading()) {
