@@ -36,13 +36,9 @@ export class AuthService {
       .pipe(tap(response => this.storeToken(response.token)));
   }
 
-  requestRegistration(request: RegisterRequest): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.apiUrl}/register/request`, request);
-  }
-
-  verifyRegistration(email: string, code: string): Observable<LoginResponse> {
+  register(request: RegisterRequest): Observable<LoginResponse> {
     return this.http
-      .post<LoginResponse>(`${this.apiUrl}/register/verify`, { email, code })
+      .post<LoginResponse>(`${this.apiUrl}/register`, request)
       .pipe(tap(response => this.storeToken(response.token)));
   }
 
