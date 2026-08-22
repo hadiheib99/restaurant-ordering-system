@@ -1,119 +1,56 @@
 .orders-page {
-  min-height: 100vh;
-  padding: 3rem;
-  background: #f3f4f6;
+  min-height:100vh;
+  padding:44px 24px 72px;
+  background:transparent;
 }
 
 header {
-  max-width: 1200px;
-  margin: 0 auto 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  max-width:1240px;
+  margin:0 auto 28px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:18px;
 }
-
-header h1 {
-  margin-bottom: 0.25rem;
-}
-
-header p {
-  margin-top: 0;
-  color: #64748b;
-}
-
-.header-actions,
-.order-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.orders-grid {
-  max-width: 1200px;
-  margin: auto;
-  display: grid;
-  gap: 1.5rem;
-}
-
-.order-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 1rem;
-  box-shadow: 0 5px 20px rgb(0 0 0 / 8%);
-}
-
-.order-header,
-.order-footer,
-.item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.order-header {
-  margin-bottom: 1.5rem;
-}
-
-.order-header h2 {
-  margin: 0;
-}
-
-.status {
-  padding: 0.4rem 0.8rem;
-  border-radius: 999px;
-  background: #e2e8f0;
-  font-weight: 600;
-}
-
-.items {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.item {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.order-footer {
-  margin-top: 1.5rem;
-}
+header h1 { margin:0 0 6px; font-family:'Playfair Display',serif; font-size:clamp(2.4rem,6vw,3.7rem); line-height:1; }
+header p { margin:0; color:var(--muted); }
+.header-actions,.order-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 
 button {
-  padding: 0.7rem 1rem;
-  border: none;
-  border-radius: 0.5rem;
-  cursor: pointer;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px 14px;
+  background:white;
+  color:var(--text);
+  font-weight:750;
+  cursor:pointer;
+  transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
 }
+button:hover:not(:disabled) { transform:translateY(-1px); border-color:#d5bca9; box-shadow:var(--shadow-sm); }
+button.danger { color:var(--danger); background:#fff5f4; border-color:#f2c8c2; }
 
-button:hover {
-  filter: brightness(0.97);
-}
+.orders-grid { max-width:1240px; margin:auto; display:grid; gap:18px; }
+.order-card { background:rgba(255,255,255,.97); padding:24px; border:1px solid var(--border); border-radius:22px; box-shadow:var(--shadow-sm); transition:box-shadow .18s ease; }
+.order-card:hover { box-shadow:var(--shadow-md); }
+.order-header,.order-footer,.item { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.order-header { margin-bottom:18px; }
+.order-header h2 { margin:0 0 4px; font-size:1.3rem; }
+.order-header span:not(.status) { color:var(--muted); }
+.status { padding:7px 11px; border-radius:999px; background:var(--surface-soft); color:var(--primary-dark); font-size:.8rem; font-weight:800; letter-spacing:.04em; }
+.items { display:grid; gap:2px; padding:4px 0; }
+.item { padding:12px 0; border-bottom:1px solid var(--border); }
+.item span { color:#4f4036; }
+.order-footer { margin-top:20px; padding-top:4px; }
+.order-footer > strong { font-size:1.14rem; }
+.order-actions button:not(.danger) { border-color:transparent; background:linear-gradient(135deg,var(--primary),#ea7a36); color:white; box-shadow:0 7px 18px rgba(217,95,35,.18); }
+.error { max-width:1240px; margin:0 auto; color:var(--danger); font-weight:700; }
 
-button.danger {
-  color: #b91c1c;
-  background: #fee2e2;
-}
-
-.error {
-  color: #b91c1c;
-}
-
-@media (max-width: 700px) {
-  .orders-page {
-    padding: 1.5rem;
-  }
-
-  header,
-  .order-footer {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .item {
-    gap: 0.75rem;
-  }
+@media (max-width:700px) {
+  .orders-page { padding:28px 16px 56px; }
+  header,.order-footer { align-items:flex-start; flex-direction:column; }
+  .header-actions { width:100%; }
+  .header-actions button { flex:1; }
+  .order-card { padding:19px; }
+  .order-header { align-items:flex-start; }
+  .item { gap:10px; }
 }
