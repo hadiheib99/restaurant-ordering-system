@@ -4,9 +4,18 @@
   background:transparent;
 }
 
-header { max-width:1240px; margin:0 auto 30px; }
+header {
+  max-width:1240px;
+  margin:0 auto 30px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:20px;
+}
 header h1 { margin:0 0 7px; font-family:'Playfair Display',serif; font-size:clamp(2.5rem,6vw,4rem); line-height:1; }
 header p { margin:0; color:var(--muted); font-size:1.02rem; }
+header button { border:1px solid var(--border); border-radius:12px; padding:10px 16px; background:white; color:var(--text); font-weight:750; cursor:pointer; transition:transform .16s ease,box-shadow .16s ease; }
+header button:hover { transform:translateY(-1px); box-shadow:var(--shadow-sm); }
 
 .dashboard-grid {
   max-width:1240px;
@@ -28,12 +37,12 @@ header p { margin:0; color:var(--muted); font-size:1.02rem; }
   text-decoration:none;
   color:inherit;
   box-shadow:var(--shadow-sm);
-  transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
 }
-.dashboard-card::after { content:'→'; position:absolute; right:24px; bottom:20px; width:38px; height:38px; display:grid; place-items:center; border-radius:50%; background:var(--surface-soft); color:var(--primary); font-size:1.2rem; font-weight:800; transition:transform .2s ease, background .2s ease; }
+.dashboard-card::after { content:'→'; position:absolute; right:24px; bottom:20px; width:38px; height:38px; display:grid; place-items:center; border-radius:50%; background:var(--surface-soft); color:var(--primary); font-size:1.2rem; font-weight:800; transition:transform .2s ease,background .2s ease; }
 .dashboard-card:hover { transform:translateY(-5px); border-color:#dfc7b5; box-shadow:var(--shadow-md); }
 .dashboard-card:hover::after { transform:translateX(3px); background:#ffe9d8; }
 .dashboard-card h2 { margin:0 0 10px; font-size:1.4rem; }
 .dashboard-card p { max-width:85%; margin:0; color:var(--muted); line-height:1.55; }
 
-@media (max-width:700px) { .admin-page { padding:28px 16px 56px; } .dashboard-card { min-height:150px; } }
+@media (max-width:700px) { .admin-page { padding:28px 16px 56px; } header { align-items:flex-start; flex-direction:column; } header button { width:100%; } .dashboard-card { min-height:150px; } }
