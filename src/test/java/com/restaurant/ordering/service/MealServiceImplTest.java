@@ -50,7 +50,7 @@ class MealServiceImplTest {
     @Test
     void getAvailableMealsMapsEntitiesToResponses() {
         Category category = category(1L, "Drinks");
-        Meal meal = meal(7L, "Cola", category, true);
+        Meal meal = meal("Cola", category, true);
         when(mealRepository.findByAvailableTrue()).thenReturn(List.of(meal));
 
         var result = service.getAvailableMeals();
@@ -63,7 +63,7 @@ class MealServiceImplTest {
     @Test
     void updateMealUpdatesOnlyProvidedValues() {
         Category category = category(1L, "Pizza");
-        Meal existing = meal(4L, "Old", category, true);
+        Meal existing = meal("Old", category, true);
         existing.setDescription("Keep description");
         existing.setPrice(new BigDecimal("35.00"));
 
@@ -92,9 +92,8 @@ class MealServiceImplTest {
         return category;
     }
 
-    private static Meal meal(Long id, String name, Category category, boolean available) {
+    private static Meal meal(String name, Category category, boolean available) {
         Meal meal = new Meal();
-        meal.setId(id);
         meal.setName(name);
         meal.setDescription("Description");
         meal.setPrice(new BigDecimal("10.00"));
