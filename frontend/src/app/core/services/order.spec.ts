@@ -20,7 +20,7 @@ describe('OrderService', () => {
 
   it('loads orders', () => {
     service.getOrders().subscribe();
-    const request = http.expectOne('http://localhost:8080/api/orders');
+    const request = http.expectOne('/api/orders');
     expect(request.request.method).toBe('GET');
     request.flush([]);
   });
@@ -29,7 +29,7 @@ describe('OrderService', () => {
     const payload = { customerId: 2, items: [{ mealId: 1, quantity: 2 }] };
     service.createOrder(payload).subscribe();
 
-    const request = http.expectOne('http://localhost:8080/api/orders');
+    const request = http.expectOne('/api/orders');
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual(payload);
     request.flush({});
@@ -38,14 +38,14 @@ describe('OrderService', () => {
   it('updates order status using the status endpoint', () => {
     service.updateStatus(10, 'READY').subscribe();
 
-    const request = http.expectOne('http://localhost:8080/api/orders/10/status?value=READY');
+    const request = http.expectOne('/api/orders/10/status?value=READY');
     expect(request.request.method).toBe('PATCH');
     request.flush({});
   });
 
   it('deletes an order', () => {
     service.deleteOrder(10).subscribe();
-    const request = http.expectOne('http://localhost:8080/api/orders/10');
+    const request = http.expectOne('/api/orders/10');
     expect(request.request.method).toBe('DELETE');
     request.flush(null);
   });

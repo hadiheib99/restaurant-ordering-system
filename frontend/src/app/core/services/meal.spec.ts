@@ -20,7 +20,7 @@ describe('MealService', () => {
 
   it('loads meals', () => {
     service.getMeals().subscribe(meals => expect(meals.length).toBe(1));
-    const request = http.expectOne('http://localhost:8080/api/meals');
+    const request = http.expectOne('/api/meals');
     expect(request.request.method).toBe('GET');
     request.flush([{ id: 1, name: 'Pizza', description: '', price: 40, categoryId: 1, categoryName: 'Pizza', available: true }]);
   });
@@ -29,17 +29,17 @@ describe('MealService', () => {
     const payload = { name: 'Pizza', description: 'Classic', price: 40, categoryId: 1, available: true };
 
     service.createMeal(payload).subscribe();
-    const create = http.expectOne('http://localhost:8080/api/meals');
+    const create = http.expectOne('/api/meals');
     expect(create.request.method).toBe('POST');
     create.flush({ id: 3, categoryName: 'Pizza', ...payload });
 
     service.updateMeal(3, payload).subscribe();
-    const update = http.expectOne('http://localhost:8080/api/meals/3');
+    const update = http.expectOne('/api/meals/3');
     expect(update.request.method).toBe('PUT');
     update.flush({ id: 3, categoryName: 'Pizza', ...payload });
 
     service.deleteMeal(3).subscribe();
-    const remove = http.expectOne('http://localhost:8080/api/meals/3');
+    const remove = http.expectOne('/api/meals/3');
     expect(remove.request.method).toBe('DELETE');
     remove.flush(null);
   });
