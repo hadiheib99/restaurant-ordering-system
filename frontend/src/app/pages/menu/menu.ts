@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { MealService } from '../../core/services/meal';
 import { CartService } from '../../core/services/cart';
@@ -23,6 +23,28 @@ export class Menu implements OnInit {
   readonly loading = signal(true);
   readonly placingOrder = signal(false);
   readonly errorMessage = signal('');
+  readonly searchTerm = signal('');
+  readonly selectedCategory = signal('All');
+
+  readonly categories = computed(() => [
+    'All',
+    ...Array.from(new Set(this.meals().map(meal => meal.categoryName))).sort()
+  ]);
+
+  readonly filteredMeals = computed(() => {
+    const term = this.searchTerm().trim().toLowerCase();
+    const category = this.selectedCategory();
+
+    return this.meals().filter(meal => {
+      const matchesCategory = category === 'All' || meal.categoryName === category;
+      const matchesSearch = !term ||
+        meal.name.toLowerCase().includes(term) ||
+        meal.description?.toLowerCase().includes(term) ||
+        meal.categoryName.toLowerCase().includes(term);
+
+      return matchesCategory && matchesSearch;
+    });
+  });
 
   ngOnInit(): void {
     this.loadMeals();
@@ -41,14 +63,25 @@ export class Menu implements OnInit {
     });
   }
 
+  updateSearch(event: Event): void {
+    this.searchTerm.set((event.target as HTMLInputElement).value);
+  }
+
+  selectCategory(category: string): void {
+    this.selectedCategory.set(category);
+  }
+
+  clearFilters(): void {
+    this.searchTerm.set('');
+    this.selectedCategory.set('All');
+  }
+
   addToCart(meal: Meal): void {
     this.cartService.add(meal);
   }
 
   placeOrder(): void {
-    if (this.cartService.items().length === 0 || this.placingOrder()) {
-      return;
-    }
+    if (this.cartService.items().length === 0 || this.placingOrder()) return;
 
     this.placingOrder.set(true);
     this.errorMessage.set('');
