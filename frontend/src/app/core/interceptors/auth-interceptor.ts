@@ -5,7 +5,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   // Login and registration are public. Do not send a stale JWT with them.
   if (
     req.url.includes('/api/auth/login') ||
-    req.url.includes('/api/auth/register/')
+    req.url.includes('/api/auth/register')
   ) {
     return next(req);
   }
