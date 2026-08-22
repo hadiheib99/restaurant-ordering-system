@@ -21,17 +21,10 @@ public class RestaurantOrder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /*
-     * The customer who placed the order.
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id")
     private User customer;
 
-    /*
-     * The waiter responsible for the order.
-     * It can initially be null.
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "waiter_id")
     private User waiter;
@@ -49,25 +42,19 @@ public class RestaurantOrder {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @OneToMany(
-            mappedBy = "order",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
-
         createdAt = now;
         updatedAt = now;
 
         if (status == null) {
             status = OrderStatus.NEW;
         }
-
         if (totalPrice == null) {
             totalPrice = BigDecimal.ZERO;
         }
