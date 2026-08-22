@@ -29,12 +29,18 @@ describe('MealService', () => {
     const payload = { name: 'Pizza', description: 'Classic', price: 40, categoryId: 1, available: true };
 
     service.createMeal(payload).subscribe();
-    expect(http.expectOne('http://localhost:8080/api/meals').request.method).toBe('POST');
+    const create = http.expectOne('http://localhost:8080/api/meals');
+    expect(create.request.method).toBe('POST');
+    create.flush({ id: 3, categoryName: 'Pizza', ...payload });
 
     service.updateMeal(3, payload).subscribe();
-    expect(http.expectOne('http://localhost:8080/api/meals/3').request.method).toBe('PUT');
+    const update = http.expectOne('http://localhost:8080/api/meals/3');
+    expect(update.request.method).toBe('PUT');
+    update.flush({ id: 3, categoryName: 'Pizza', ...payload });
 
     service.deleteMeal(3).subscribe();
-    expect(http.expectOne('http://localhost:8080/api/meals/3').request.method).toBe('DELETE');
+    const remove = http.expectOne('http://localhost:8080/api/meals/3');
+    expect(remove.request.method).toBe('DELETE');
+    remove.flush(null);
   });
 });
