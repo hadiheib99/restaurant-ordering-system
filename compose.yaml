@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - restaurant_postgres_data:/var/lib/postgresql/data
+      - restaurant_postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d restaurant_db"]
       interval: 5s
