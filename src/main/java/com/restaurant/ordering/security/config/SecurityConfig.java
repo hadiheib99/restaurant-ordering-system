@@ -54,8 +54,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST,
                                 "/api/auth/login",
-                                "/api/auth/register/request",
-                                "/api/auth/register/verify"
+                                "/api/auth/register"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/meals/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
