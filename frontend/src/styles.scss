@@ -1,1 +1,69 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap');
+
+:root {
+  --bg: #fffaf5;
+  --surface: #ffffff;
+  --surface-soft: #fff7ed;
+  --text: #24170f;
+  --muted: #7c6b5f;
+  --border: #eadfd6;
+  --primary: #d95f23;
+  --primary-dark: #ad4314;
+  --accent: #f4a261;
+  --success: #15803d;
+  --danger: #b42318;
+  --shadow-sm: 0 6px 20px rgba(73, 45, 28, 0.07);
+  --shadow-md: 0 16px 45px rgba(73, 45, 28, 0.12);
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--bg);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(244, 162, 97, .10), transparent 32rem),
+    var(--bg);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, p {
+  text-wrap: pretty;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(217, 95, 35, .24);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(217, 95, 35, .18);
+}
