@@ -26,16 +26,18 @@ export class Menu implements OnInit {
   readonly searchTerm = signal('');
   readonly selectedCategory = signal('All');
 
+  readonly availableMeals = computed(() => this.meals().filter(meal => meal.available));
+
   readonly categories = computed(() => [
     'All',
-    ...Array.from(new Set(this.meals().map(meal => meal.categoryName))).sort()
+    ...Array.from(new Set(this.availableMeals().map(meal => meal.categoryName))).sort()
   ]);
 
   readonly filteredMeals = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
     const category = this.selectedCategory();
 
-    return this.meals().filter(meal => {
+    return this.availableMeals().filter(meal => {
       const matchesCategory = category === 'All' || meal.categoryName === category;
       const matchesSearch = !term ||
         meal.name.toLowerCase().includes(term) ||
