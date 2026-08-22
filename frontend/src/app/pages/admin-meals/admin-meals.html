@@ -3,7 +3,7 @@
     <div>
       <p class="eyebrow">Restaurant Admin</p>
       <h1>Manage Meals</h1>
-      <p>Create meals, update prices and control menu availability.</p>
+      <p>Create meals, update prices, add photos and control availability.</p>
     </div>
     <a class="back-link" href="/admin">Back to Admin</a>
   </header>
@@ -41,6 +41,12 @@
         <textarea name="description" [(ngModel)]="form.description" rows="3" placeholder="Meal description"></textarea>
       </label>
 
+      <label class="description-field">
+        Image URL
+        <input name="imageUrl" [(ngModel)]="form.imageUrl" type="url" placeholder="https://images.example.com/meal.jpg">
+        <small>Use a direct image URL. Leave blank to show the category placeholder.</small>
+      </label>
+
       <label class="checkbox-field">
         <input name="available" [(ngModel)]="form.available" type="checkbox">
         Available on menu
@@ -71,6 +77,14 @@
       <div class="meal-grid">
         @for (meal of meals(); track meal.id) {
           <article class="meal-card">
+            <div class="meal-preview" [class.placeholder]="!meal.imageUrl">
+              @if (meal.imageUrl) {
+                <img [src]="meal.imageUrl" [alt]="meal.name" loading="lazy">
+              } @else {
+                <span>{{ meal.categoryName.charAt(0) }}</span>
+              }
+            </div>
+
             <div class="meal-card-top">
               <span class="category">{{ meal.categoryName }}</span>
               <span class="status" [class.unavailable]="!meal.available">
