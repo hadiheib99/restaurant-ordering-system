@@ -19,7 +19,7 @@ export interface MealRequest {
 export class MealService {
 
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:8080/api/meals';
+  private readonly apiUrl = '/api/meals';
 
   getMeals(): Observable<Meal[]> {
     return this.http.get<Meal[]>(this.apiUrl);
