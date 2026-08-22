@@ -14,5 +14,5 @@ public class MealRequest {
     private BigDecimal price;
     private Long categoryId;
     private Boolean available;
+    private String imageUrl;
 }
-
