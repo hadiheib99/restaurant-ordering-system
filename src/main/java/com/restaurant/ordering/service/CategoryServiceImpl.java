@@ -3,15 +3,16 @@ package com.restaurant.ordering.service;
 import com.restaurant.ordering.exception.ResourceNotFoundException;
 import com.restaurant.ordering.model.Category;
 import com.restaurant.ordering.repository.CategoryRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
 
-    @Autowired
-    private CategoryRepository categoryRepository;
+    private final CategoryRepository categoryRepository;
 
     @Override
     public Category createCategory(Category category) {
@@ -49,4 +50,3 @@ public class CategoryServiceImpl implements CategoryService {
         categoryRepository.deleteById(id);
     }
 }
-
