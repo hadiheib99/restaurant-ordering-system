@@ -6,6 +6,15 @@ import { LoginRequest } from '../models/login-request';
 import { LoginResponse } from '../models/login-response';
 import { User, UserRole } from '../models/user';
 
+export interface RegisterRequest {
+  username: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+}
+
 interface JwtPayload {
   sub?: string;
   role?: UserRole;
@@ -24,11 +33,17 @@ export class AuthService {
   login(request: LoginRequest): Observable<LoginResponse> {
     return this.http
       .post<LoginResponse>(`${this.apiUrl}/login`, request)
-      .pipe(
-        tap(response => {
-          localStorage.setItem(this.tokenKey, response.token);
-        })
-      );
+      .pipe(tap(response => this.storeToken(response.token)));
+  }
+
+  requestRegistration(request: RegisterRequest): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/register/request`, request);
+  }
+
+  verifyRegistration(email: string, code: string): Observable<LoginResponse> {
+    return this.http
+      .post<LoginResponse>(`${this.apiUrl}/register/verify`, { email, code })
+      .pipe(tap(response => this.storeToken(response.token)));
   }
 
   getCurrentUser(): Observable<User> {
@@ -80,6 +95,10 @@ export class AuthService {
 
   logout(): void {
     localStorage.removeItem(this.tokenKey);
+  }
+
+  private storeToken(token: string): void {
+    localStorage.setItem(this.tokenKey, token);
   }
 
   private getPayload(): JwtPayload | null {
