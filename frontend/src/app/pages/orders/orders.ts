@@ -20,7 +20,6 @@ export class Orders implements OnInit {
   readonly loading = signal(true);
   readonly errorMessage = signal('');
   readonly role = this.authService.getRole();
-  readonly canManage = this.role !== 'CUSTOMER';
   readonly canDelete = this.role === 'ADMIN';
 
   ngOnInit(): void {
@@ -42,7 +41,9 @@ export class Orders implements OnInit {
   }
 
   updateStatus(order: Order, status: string): void {
-    if (!this.canManage) {
+    const allowedStatus = this.nextAllowedStatus(order.status);
+
+    if (allowedStatus !== status) {
       return;
     }
 
@@ -56,7 +57,7 @@ export class Orders implements OnInit {
       },
       error: error => {
         console.error(error);
-        alert('Could not update order status');
+        alert('You do not have permission to perform this status change.');
       }
     });
   }
@@ -77,7 +78,35 @@ export class Orders implements OnInit {
     });
   }
 
-  nextStatus(status: string): string | null {
+  nextAllowedStatus(status: string): string | null {
+    if (this.role === 'ADMIN') {
+      return this.nextStatus(status);
+    }
+
+    if (this.role === 'CHEF') {
+      if (status === 'NEW') {
+        return 'PREPARING';
+      }
+      if (status === 'PREPARING') {
+        return 'READY';
+      }
+      return null;
+    }
+
+    if (this.role === 'WAITER') {
+      if (status === 'READY') {
+        return 'SERVED';
+      }
+      if (status === 'SERVED') {
+        return 'PAID';
+      }
+      return null;
+    }
+
+    return null;
+  }
+
+  private nextStatus(status: string): string | null {
     switch (status) {
       case 'NEW': return 'PREPARING';
       case 'PREPARING': return 'READY';
