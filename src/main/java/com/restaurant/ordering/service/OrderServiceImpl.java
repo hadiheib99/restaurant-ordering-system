@@ -159,7 +159,10 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public OrderResponse updateStatus(Long id, OrderStatus newStatus) {
         RestaurantOrder order = findOrder(id);
+
         validateStatusTransition(order.getStatus(), newStatus);
+        validateStatusPermission(order.getStatus(), newStatus);
+
         order.setStatus(newStatus);
 
         RestaurantOrder savedOrder = orderRepository.save(order);
@@ -292,6 +295,34 @@ public class OrderServiceImpl implements OrderService {
         if (!validTransition) {
             throw new IllegalArgumentException(
                     "Invalid order status transition from "
+                            + currentStatus
+                            + " to "
+                            + newStatus
+            );
+        }
+    }
+
+    private void validateStatusPermission(
+            OrderStatus currentStatus,
+            OrderStatus newStatus
+    ) {
+        if (hasRole("ROLE_ADMIN")) {
+            return;
+        }
+
+        boolean allowed = false;
+
+        if (hasRole("ROLE_CHEF")) {
+            allowed = (currentStatus == OrderStatus.NEW && newStatus == OrderStatus.PREPARING) ||
+                    (currentStatus == OrderStatus.PREPARING && newStatus == OrderStatus.READY);
+        } else if (hasRole("ROLE_WAITER")) {
+            allowed = (currentStatus == OrderStatus.READY && newStatus == OrderStatus.SERVED) ||
+                    (currentStatus == OrderStatus.SERVED && newStatus == OrderStatus.PAID);
+        }
+
+        if (!allowed) {
+            throw new AccessDeniedException(
+                    "Your role is not allowed to change order status from "
                             + currentStatus
                             + " to "
                             + newStatus
