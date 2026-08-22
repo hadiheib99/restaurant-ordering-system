@@ -2,8 +2,11 @@ import { HttpInterceptorFn } from '@angular/common/http';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
-  // Do not attach a JWT when logging in
-  if (req.url.includes('/api/auth/login')) {
+  // Login and registration are public. Do not send a stale JWT with them.
+  if (
+    req.url.includes('/api/auth/login') ||
+    req.url.includes('/api/auth/register/')
+  ) {
     return next(req);
   }
 
