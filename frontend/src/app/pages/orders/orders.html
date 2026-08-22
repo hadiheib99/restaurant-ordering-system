@@ -49,7 +49,7 @@
             <strong>Total: ₪{{ order.totalPrice }}</strong>
 
             <div class="order-actions">
-              @if (canManage && nextStatus(order.status); as next) {
+              @if (nextAllowedStatus(order.status); as next) {
                 <button type="button" (click)="updateStatus(order, next)">
                   Move to {{ next }}
                 </button>
