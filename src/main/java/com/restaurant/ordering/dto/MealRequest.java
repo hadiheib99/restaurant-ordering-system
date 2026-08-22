@@ -14,5 +14,9 @@ public class MealRequest {
     private BigDecimal price;
     private Long categoryId;
     private Boolean available;
-}
+    private String imageUrl;
 
+    public MealRequest(String name, String description, BigDecimal price, Long categoryId, Boolean available) {
+        this(name, description, price, categoryId, available, null);
+    }
+}

@@ -64,7 +64,7 @@ export class AdminMeals {
     this.saving.set(true);
     this.errorMessage.set('');
     const id = this.editingId();
-    const request = { ...this.form };
+    const request = { ...this.form, imageUrl: this.form.imageUrl?.trim() || null };
     const operation = id === null
       ? this.mealService.createMeal(request)
       : this.mealService.updateMeal(id, request);
@@ -89,7 +89,8 @@ export class AdminMeals {
       description: meal.description ?? '',
       price: meal.price,
       categoryId: meal.categoryId,
-      available: meal.available
+      available: meal.available,
+      imageUrl: meal.imageUrl ?? ''
     };
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -100,7 +101,8 @@ export class AdminMeals {
       description: meal.description ?? '',
       price: meal.price,
       categoryId: meal.categoryId,
-      available: !meal.available
+      available: !meal.available,
+      imageUrl: meal.imageUrl ?? null
     };
 
     this.mealService.updateMeal(meal.id, request).subscribe({
@@ -112,9 +114,7 @@ export class AdminMeals {
   }
 
   deleteMeal(meal: Meal): void {
-    if (!confirm(`Delete ${meal.name}?`)) {
-      return;
-    }
+    if (!confirm(`Delete ${meal.name}?`)) return;
 
     this.mealService.deleteMeal(meal.id).subscribe({
       next: () => this.meals.update(items => items.filter(item => item.id !== meal.id)),
@@ -133,7 +133,8 @@ export class AdminMeals {
       description: '',
       price: 0,
       categoryId: 0,
-      available: true
+      available: true,
+      imageUrl: ''
     };
   }
 }

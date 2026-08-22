@@ -6,4 +6,5 @@ export interface Meal {
   available: boolean;
   categoryId: number;
   categoryName: string;
+  imageUrl?: string | null;
 }

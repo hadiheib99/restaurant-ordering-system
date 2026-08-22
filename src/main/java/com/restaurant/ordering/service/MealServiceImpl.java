@@ -30,6 +30,7 @@ public class MealServiceImpl implements MealService {
         meal.setPrice(mealRequest.getPrice());
         meal.setCategory(category);
         meal.setAvailable(mealRequest.getAvailable() != null ? mealRequest.getAvailable() : true);
+        meal.setImageUrl(mealRequest.getImageUrl());
 
         return convertToResponse(mealRepository.save(meal));
     }
@@ -43,49 +44,31 @@ public class MealServiceImpl implements MealService {
     @Override
     @Transactional(readOnly = true)
     public List<MealResponse> getAllMeals() {
-        return mealRepository.findAll()
-                .stream()
-                .map(this::convertToResponse)
-                .toList();
+        return mealRepository.findAll().stream().map(this::convertToResponse).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MealResponse> getMealsByCategory(Long categoryId) {
-        return mealRepository.findByCategoryId(categoryId)
-                .stream()
-                .map(this::convertToResponse)
-                .toList();
+        return mealRepository.findByCategoryId(categoryId).stream().map(this::convertToResponse).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MealResponse> getAvailableMeals() {
-        return mealRepository.findByAvailableTrue()
-                .stream()
-                .map(this::convertToResponse)
-                .toList();
+        return mealRepository.findByAvailableTrue().stream().map(this::convertToResponse).toList();
     }
 
     @Override
     public MealResponse updateMeal(Long id, MealRequest mealRequest) {
         Meal meal = findMeal(id);
 
-        if (mealRequest.getName() != null) {
-            meal.setName(mealRequest.getName());
-        }
-        if (mealRequest.getDescription() != null) {
-            meal.setDescription(mealRequest.getDescription());
-        }
-        if (mealRequest.getPrice() != null) {
-            meal.setPrice(mealRequest.getPrice());
-        }
-        if (mealRequest.getCategoryId() != null) {
-            meal.setCategory(categoryService.getCategoryById(mealRequest.getCategoryId()));
-        }
-        if (mealRequest.getAvailable() != null) {
-            meal.setAvailable(mealRequest.getAvailable());
-        }
+        if (mealRequest.getName() != null) meal.setName(mealRequest.getName());
+        if (mealRequest.getDescription() != null) meal.setDescription(mealRequest.getDescription());
+        if (mealRequest.getPrice() != null) meal.setPrice(mealRequest.getPrice());
+        if (mealRequest.getCategoryId() != null) meal.setCategory(categoryService.getCategoryById(mealRequest.getCategoryId()));
+        if (mealRequest.getAvailable() != null) meal.setAvailable(mealRequest.getAvailable());
+        if (mealRequest.getImageUrl() != null) meal.setImageUrl(mealRequest.getImageUrl());
 
         return convertToResponse(mealRepository.save(meal));
     }
@@ -97,9 +80,7 @@ public class MealServiceImpl implements MealService {
 
     private Meal findMeal(Long id) {
         return mealRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Meal not found with id: " + id
-                ));
+                .orElseThrow(() -> new ResourceNotFoundException("Meal not found with id: " + id));
     }
 
     private MealResponse convertToResponse(Meal meal) {
@@ -110,7 +91,8 @@ public class MealServiceImpl implements MealService {
                 meal.getPrice(),
                 meal.getCategory().getId(),
                 meal.getCategory().getName(),
-                meal.getAvailable()
+                meal.getAvailable(),
+                meal.getImageUrl()
         );
     }
 }

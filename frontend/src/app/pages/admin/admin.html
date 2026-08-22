@@ -1,31 +1,78 @@
 <main class="admin-page">
   <header>
     <div>
+      <p class="eyebrow">Restaurant Control Center</p>
       <h1>Admin Dashboard</h1>
-      <p>Manage the restaurant system</p>
+      <p>Monitor restaurant activity and manage the whole system.</p>
     </div>
     <button type="button" (click)="logout()">Logout</button>
   </header>
 
+  <section class="stats-section">
+    <div class="section-heading">
+      <div>
+        <h2>Live overview</h2>
+        <p>Quick operational numbers from your current restaurant data.</p>
+      </div>
+      <button type="button" class="refresh-button" (click)="loadStatistics()" [disabled]="loadingStats()">
+        {{ loadingStats() ? 'Refreshing...' : 'Refresh' }}
+      </button>
+    </div>
+
+    @if (statsError()) {
+      <p class="stats-error">{{ statsError() }}</p>
+    }
+
+    <div class="stats-grid">
+      <article class="stat-card highlight">
+        <span class="stat-label">Active orders</span>
+        <strong>{{ activeOrders() }}</strong>
+        <small>{{ todayOrders() }} placed today</small>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-label">Paid revenue</span>
+        <strong>₪{{ revenue().toFixed(2) }}</strong>
+        <small>{{ paidOrders() }} paid orders</small>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-label">Customers</span>
+        <strong>{{ totalCustomers() }}</strong>
+        <small>Registered customer accounts</small>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-label">Menu availability</span>
+        <strong>{{ availableMeals() }}/{{ totalMeals() }}</strong>
+        <small>Meals currently available</small>
+      </article>
+    </div>
+  </section>
+
   <section class="dashboard-grid">
     <a routerLink="/admin/meals" class="dashboard-card">
+      <span class="card-icon">🍽️</span>
       <h2>Meals</h2>
-      <p>Add, edit and manage menu items.</p>
+      <p>Add, edit and manage menu items, photos and availability.</p>
     </a>
 
     <a routerLink="/admin/categories" class="dashboard-card">
+      <span class="card-icon">🏷️</span>
       <h2>Categories</h2>
-      <p>Manage food categories.</p>
+      <p>Organize the menu into clear customer-friendly sections.</p>
     </a>
 
     <a routerLink="/admin/users" class="dashboard-card">
+      <span class="card-icon">👥</span>
       <h2>Users</h2>
-      <p>Manage customers, waiters, chefs and admins.</p>
+      <p>Manage customers, waiters, chefs and administrators.</p>
     </a>
 
     <a routerLink="/orders" class="dashboard-card">
+      <span class="card-icon">🧾</span>
       <h2>Orders</h2>
-      <p>View and manage restaurant orders.</p>
+      <p>View active orders and manage the restaurant workflow.</p>
     </a>
   </section>
 </main>

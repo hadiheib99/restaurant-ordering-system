@@ -1,49 +1,92 @@
 <main class="menu-page">
   <header>
     <div>
+      <p class="eyebrow">Freshly prepared</p>
       <h1>Restaurant Menu</h1>
-      <p>Choose something delicious</p>
+      <p>Find a favorite, customize your cart, and order in a few taps.</p>
     </div>
 
     <div class="header-actions">
       <button type="button" (click)="viewOrders()">My Orders</button>
-      <button type="button" (click)="logout()">Logout</button>
+      <button type="button" class="secondary" (click)="logout()">Logout</button>
     </div>
   </header>
 
   @if (loading()) {
-    <p>Loading menu...</p>
+    <section class="state-card">Loading menu...</section>
   } @else if (errorMessage()) {
-    <p class="error">{{ errorMessage() }}</p>
+    <section class="state-card error">{{ errorMessage() }}</section>
   } @else {
-    <div class="meal-grid">
-      @for (meal of meals(); track meal.id) {
-        <article class="meal-card">
-          <div class="meal-content">
-            <span class="category">{{ meal.categoryName }}</span>
-            <h2>{{ meal.name }}</h2>
-            <p class="description">{{ meal.description }}</p>
+    <section class="menu-toolbar">
+      <div class="search-box">
+        <span>⌕</span>
+        <input
+          type="search"
+          placeholder="Search meals, ingredients or categories"
+          [value]="searchTerm()"
+          (input)="updateSearch($event)"
+          aria-label="Search menu"
+        >
+      </div>
 
-            <div class="meal-footer">
-              <strong>₪{{ meal.price }}</strong>
+      <div class="category-filters" aria-label="Menu categories">
+        @for (category of categories(); track category) {
+          <button
+            type="button"
+            class="filter-chip"
+            [class.active]="selectedCategory() === category"
+            (click)="selectCategory(category)">
+            {{ category }}
+          </button>
+        }
+      </div>
+    </section>
 
-              @if (meal.available) {
-                <button type="button" (click)="addToCart(meal)">
-                  Add to Order
-                </button>
+    @if (filteredMeals().length === 0) {
+      <section class="empty-results">
+        <strong>No meals match your search.</strong>
+        <span>Try another category or search term.</span>
+        <button type="button" (click)="clearFilters()">Show full menu</button>
+      </section>
+    } @else {
+      <div class="meal-grid">
+        @for (meal of filteredMeals(); track meal.id) {
+          <article class="meal-card">
+            <div class="meal-image" [class.placeholder]="!meal.imageUrl">
+              @if (meal.imageUrl) {
+                <img [src]="meal.imageUrl" [alt]="meal.name" loading="lazy">
               } @else {
-                <span class="unavailable">Unavailable</span>
+                <span>{{ meal.categoryName.charAt(0) }}</span>
               }
+              <span class="category">{{ meal.categoryName }}</span>
             </div>
-          </div>
-        </article>
-      }
-    </div>
+
+            <div class="meal-content">
+              <h2>{{ meal.name }}</h2>
+              <p class="description">{{ meal.description }}</p>
+
+              <div class="meal-footer">
+                <strong>₪{{ meal.price }}</strong>
+
+                @if (meal.available) {
+                  <button type="button" (click)="addToCart(meal)">
+                    Add to Order
+                  </button>
+                } @else {
+                  <span class="unavailable">Unavailable</span>
+                }
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    }
 
     @if (cartService.items().length > 0) {
       <section class="cart">
         <div class="cart-header">
           <div>
+            <p class="eyebrow">Ready when you are</p>
             <h2>Your Order</h2>
             <span>{{ cartService.count() }} item(s)</span>
           </div>

@@ -4,6 +4,7 @@ import com.restaurant.ordering.model.Meal;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface MealRepository extends JpaRepository<Meal, Long> {
 
@@ -12,6 +13,8 @@ public interface MealRepository extends JpaRepository<Meal, Long> {
     List<Meal> findByCategoryId(Long categoryId);
 
     List<Meal> findByNameContainingIgnoreCase(String name);
+
+    Optional<Meal> findByNameIgnoreCase(String name);
 
     boolean existsByNameIgnoreCase(String name);
 }
