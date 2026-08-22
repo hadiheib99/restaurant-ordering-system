@@ -25,7 +25,7 @@ describe('AuthService', () => {
   it('stores the token after login', () => {
     service.login({ email: 'customer@example.com', password: 'Password123' }).subscribe();
 
-    const request = http.expectOne('http://localhost:8080/api/auth/login');
+    const request = http.expectOne('/api/auth/login');
     expect(request.request.method).toBe('POST');
     request.flush({ token: 'header.payload.signature' });
 
@@ -44,7 +44,7 @@ describe('AuthService', () => {
 
     service.register(payload).subscribe();
 
-    const request = http.expectOne('http://localhost:8080/api/auth/register');
+    const request = http.expectOne('/api/auth/register');
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual(payload);
     request.flush({ token: 'new-token' });
