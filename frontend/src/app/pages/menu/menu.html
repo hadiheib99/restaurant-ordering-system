@@ -1,4 +1,15 @@
 <main class="menu-page">
+  @if (successMessage()) {
+    <aside class="success-toast" role="status" aria-live="polite">
+      <span class="success-icon">✓</span>
+      <div>
+        <strong>Order added</strong>
+        <span>{{ successMessage() }}</span>
+      </div>
+      <button type="button" aria-label="Dismiss notification" (click)="dismissSuccess()">×</button>
+    </aside>
+  }
+
   <header>
     <div>
       <p class="eyebrow">Freshly prepared</p>
@@ -20,124 +31,90 @@
     <section class="menu-toolbar">
       <div class="search-box">
         <span>⌕</span>
-        <input
-          type="search"
-          placeholder="Search meals, ingredients or categories"
-          [value]="searchTerm()"
-          (input)="updateSearch($event)"
-          aria-label="Search menu"
-        >
+        <input type="search" placeholder="Search meals, ingredients or categories" [value]="searchTerm()" (input)="updateSearch($event)" aria-label="Search menu">
       </div>
 
       <div class="category-filters" aria-label="Menu categories">
         @for (category of categories(); track category) {
-          <button
-            type="button"
-            class="filter-chip"
-            [class.active]="selectedCategory() === category"
-            (click)="selectCategory(category)">
-            {{ category }}
-          </button>
+          <button type="button" class="filter-chip" [class.active]="selectedCategory() === category" (click)="selectCategory(category)">{{ category }}</button>
         }
       </div>
     </section>
 
-    @if (filteredMeals().length === 0) {
-      <section class="empty-results">
-        <strong>No meals match your search.</strong>
-        <span>Try another category or search term.</span>
-        <button type="button" (click)="clearFilters()">Show full menu</button>
+    <div class="menu-layout" [class.has-cart]="cartService.items().length > 0">
+      <section class="meals-column">
+        @if (filteredMeals().length === 0) {
+          <section class="empty-results">
+            <strong>No meals match your search.</strong>
+            <span>Try another category or search term.</span>
+            <button type="button" (click)="clearFilters()">Show full menu</button>
+          </section>
+        } @else {
+          <div class="meal-grid">
+            @for (meal of filteredMeals(); track meal.id) {
+              <article class="meal-card">
+                <div class="meal-image" [class.placeholder]="!meal.imageUrl">
+                  @if (meal.imageUrl) {
+                    <img [src]="meal.imageUrl" [alt]="meal.name" loading="lazy">
+                  } @else {
+                    <span>{{ meal.categoryName.charAt(0) }}</span>
+                  }
+                  <span class="category">{{ meal.categoryName }}</span>
+                </div>
+
+                <div class="meal-content">
+                  <h2>{{ meal.name }}</h2>
+                  <p class="description">{{ meal.description }}</p>
+                  <div class="meal-footer">
+                    <strong>₪{{ meal.price }}</strong>
+                    @if (meal.available) {
+                      <button type="button" (click)="addToCart(meal)">Add to Order</button>
+                    } @else {
+                      <span class="unavailable">Unavailable</span>
+                    }
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        }
       </section>
-    } @else {
-      <div class="meal-grid">
-        @for (meal of filteredMeals(); track meal.id) {
-          <article class="meal-card">
-            <div class="meal-image" [class.placeholder]="!meal.imageUrl">
-              @if (meal.imageUrl) {
-                <img [src]="meal.imageUrl" [alt]="meal.name" loading="lazy">
-              } @else {
-                <span>{{ meal.categoryName.charAt(0) }}</span>
-              }
-              <span class="category">{{ meal.categoryName }}</span>
+
+      @if (cartService.items().length > 0) {
+        <aside class="cart">
+          <div class="cart-header">
+            <div>
+              <p class="eyebrow">Ready when you are</p>
+              <h2>Your Order</h2>
+              <span>{{ cartService.count() }} item(s)</span>
             </div>
+            <button type="button" class="clear-button" [disabled]="placingOrder()" (click)="cartService.clear()">Clear</button>
+          </div>
 
-            <div class="meal-content">
-              <h2>{{ meal.name }}</h2>
-              <p class="description">{{ meal.description }}</p>
-
-              <div class="meal-footer">
-                <strong>₪{{ meal.price }}</strong>
-
-                @if (meal.available) {
-                  <button type="button" (click)="addToCart(meal)">
-                    Add to Order
-                  </button>
-                } @else {
-                  <span class="unavailable">Unavailable</span>
-                }
+          <div class="cart-items">
+            @for (item of cartService.items(); track item.meal.id) {
+              <div class="cart-item">
+                <div class="cart-item-info">
+                  <strong>{{ item.meal.name }}</strong>
+                  <span>₪{{ item.meal.price }} each</span>
+                </div>
+                <div class="cart-item-actions">
+                  <div class="quantity-controls">
+                    <button type="button" [disabled]="placingOrder()" (click)="cartService.decrease(item.meal.id)">−</button>
+                    <span>{{ item.quantity }}</span>
+                    <button type="button" [disabled]="placingOrder()" (click)="cartService.increase(item.meal.id)">+</button>
+                  </div>
+                  <strong class="item-total">₪{{ item.meal.price * item.quantity }}</strong>
+                </div>
+                <button type="button" class="remove-button" [disabled]="placingOrder()" (click)="cartService.remove(item.meal.id)">Remove</button>
               </div>
-            </div>
-          </article>
-        }
-      </div>
-    }
-
-    @if (cartService.items().length > 0) {
-      <section class="cart">
-        <div class="cart-header">
-          <div>
-            <p class="eyebrow">Ready when you are</p>
-            <h2>Your Order</h2>
-            <span>{{ cartService.count() }} item(s)</span>
+            }
           </div>
 
-          <button
-            type="button"
-            class="clear-button"
-            [disabled]="placingOrder()"
-            (click)="cartService.clear()">
-            Clear cart
-          </button>
-        </div>
-
-        @for (item of cartService.items(); track item.meal.id) {
-          <div class="cart-item">
-            <div class="cart-item-info">
-              <strong>{{ item.meal.name }}</strong>
-              <span>₪{{ item.meal.price }} each</span>
-            </div>
-
-            <div class="quantity-controls">
-              <button type="button" [disabled]="placingOrder()" (click)="cartService.decrease(item.meal.id)">−</button>
-              <span>{{ item.quantity }}</span>
-              <button type="button" [disabled]="placingOrder()" (click)="cartService.increase(item.meal.id)">+</button>
-            </div>
-
-            <strong class="item-total">₪{{ item.meal.price * item.quantity }}</strong>
-
-            <button
-              type="button"
-              class="remove-button"
-              [disabled]="placingOrder()"
-              (click)="cartService.remove(item.meal.id)">
-              Remove
-            </button>
-          </div>
-        }
-
-        <div class="cart-total">
-          <span>Total</span>
-          <strong>₪{{ cartService.total() }}</strong>
-        </div>
-
-        <button
-          type="button"
-          class="place-order-button"
-          [disabled]="placingOrder()"
-          (click)="placeOrder()">
-          {{ placingOrder() ? 'Placing Order...' : 'Place Order' }}
-        </button>
-      </section>
-    }
+          <div class="cart-total"><span>Total</span><strong>₪{{ cartService.total() }}</strong></div>
+          <button type="button" class="place-order-button" [disabled]="placingOrder()" (click)="placeOrder()">{{ placingOrder() ? 'Placing Order...' : 'Place Order' }}</button>
+        </aside>
+      }
+    </div>
   }
 </main>

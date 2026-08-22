@@ -23,6 +23,7 @@ export class Menu implements OnInit {
   readonly loading = signal(true);
   readonly placingOrder = signal(false);
   readonly errorMessage = signal('');
+  readonly successMessage = signal('');
   readonly searchTerm = signal('');
   readonly selectedCategory = signal('All');
 
@@ -87,6 +88,7 @@ export class Menu implements OnInit {
 
     this.placingOrder.set(true);
     this.errorMessage.set('');
+    this.successMessage.set('');
 
     this.authService.getCurrentUser().subscribe({
       next: user => {
@@ -102,7 +104,8 @@ export class Menu implements OnInit {
           next: order => {
             this.placingOrder.set(false);
             this.cartService.clear();
-            alert(`Order #${order.id} created successfully`);
+            this.successMessage.set(`Order #${order.id} was added successfully!`);
+            window.setTimeout(() => this.successMessage.set(''), 5000);
           },
           error: error => {
             this.placingOrder.set(false);
@@ -116,6 +119,10 @@ export class Menu implements OnInit {
         this.errorMessage.set('Could not identify the logged-in customer. Please log in again.');
       }
     });
+  }
+
+  dismissSuccess(): void {
+    this.successMessage.set('');
   }
 
   viewOrders(): void {
