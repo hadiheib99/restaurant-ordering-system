@@ -16,5 +16,5 @@ public class MealResponse {
     private Long categoryId;
     private String categoryName;
     private Boolean available;
+    private String imageUrl;
 }
-
