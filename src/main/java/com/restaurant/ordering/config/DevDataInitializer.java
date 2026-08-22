@@ -32,6 +32,7 @@ public class DevDataInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         seedUsers();
         seedMenu();
+        hideLegacyShawarmaMeals();
     }
 
     private void seedUsers() {
@@ -86,11 +87,22 @@ public class DevDataInitializer implements ApplicationRunner {
         meal("Cola", "Chilled 330ml soft drink", "10.00", drinks,
                 "https://images.unsplash.com/photo-1629203851122-3726ecdf080e?auto=format&fit=crop&w=900&q=80");
         meal("Fresh Lemonade", "Fresh lemon, mint and ice", "16.00", drinks,
-                "https://images.unsplash.com/photo-1523677011781-c91d1bbe2f9d?auto=format&fit=crop&w=900&q=80");
+                "/images/fresh-lemonade.svg");
         meal("Chocolate Cake", "Rich chocolate cake with chocolate sauce", "28.00", desserts,
                 "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=900&q=80");
         meal("Cheesecake", "Creamy cheesecake with berry topping", "30.00", desserts,
                 "https://images.unsplash.com/photo-1524351199678-941a58a3df50?auto=format&fit=crop&w=900&q=80");
+    }
+
+    private void hideLegacyShawarmaMeals() {
+        mealRepository.findByNameContainingIgnoreCase("shawarma").forEach(meal -> {
+            meal.setAvailable(false);
+            mealRepository.save(meal);
+        });
+        mealRepository.findByNameContainingIgnoreCase("shwarma").forEach(meal -> {
+            meal.setAvailable(false);
+            mealRepository.save(meal);
+        });
     }
 
     private Category category(String name, String description) {

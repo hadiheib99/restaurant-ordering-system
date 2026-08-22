@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Fresh Lemonade</title>
+  <desc id="desc">A chilled glass of fresh lemonade with lemon slices, mint and ice.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff7cf"/>
+      <stop offset="1" stop-color="#f7c85d"/>
+    </linearGradient>
+    <linearGradient id="drink" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff9aa"/>
+      <stop offset="1" stop-color="#f2bd33"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" rx="44" fill="url(#bg)"/>
+  <ellipse cx="600" cy="686" rx="270" ry="42" fill="#c88928" opacity=".18"/>
+  <path d="M420 185h360l-48 455c-5 45-42 79-88 79h-88c-46 0-83-34-88-79z" fill="#ffffff" opacity=".74" stroke="#fff" stroke-width="12"/>
+  <path d="M447 275h306l-37 347c-4 33-31 58-64 58h-104c-33 0-60-25-64-58z" fill="url(#drink)"/>
+  <g fill="#e8f8ff" opacity=".88">
+    <rect x="488" y="315" width="74" height="58" rx="14" transform="rotate(-10 525 344)"/>
+    <rect x="598" y="350" width="76" height="58" rx="14" transform="rotate(12 636 379)"/>
+    <rect x="545" y="450" width="72" height="55" rx="13" transform="rotate(-6 581 478)"/>
+  </g>
+  <g>
+    <circle cx="758" cy="232" r="104" fill="#ffe77d" stroke="#f4bd2f" stroke-width="18"/>
+    <circle cx="758" cy="232" r="72" fill="#fff7b8"/>
+    <path d="M758 160v144M686 232h144M708 182l100 100M808 182l-100 100" stroke="#f4c23f" stroke-width="8" opacity=".8"/>
+  </g>
+  <g fill="#439d55">
+    <path d="M409 248c-83-57-135 26-82 74 34 31 91 7 82-74z"/>
+    <path d="M432 225c39-88 127-42 102 24-16 42-71 49-102-24z"/>
+    <path d="M430 265c40-31 69-40 107-50" fill="none" stroke="#2f7e40" stroke-width="10" stroke-linecap="round"/>
+  </g>
+  <path d="M688 105l-55 212" stroke="#4f8e55" stroke-width="18" stroke-linecap="round"/>
+  <text x="90" y="720" font-family="Georgia,serif" font-size="74" font-weight="700" fill="#8f5514">Fresh Lemonade</text>
+</svg>

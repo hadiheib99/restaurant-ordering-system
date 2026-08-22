@@ -7,22 +7,22 @@ A full-stack restaurant ordering application built with Spring Boot, Angular, Po
 - JWT authentication with role-based access control
 - Roles: `ADMIN`, `WAITER`, `CHEF`, `CUSTOMER`
 - Public customer registration
-- Responsive restaurant menu with multiple categories and seeded meals
+- Responsive restaurant menu with meal images, search and category filters
 - Shopping cart with quantity controls and order placement
 - Customer order history and live status visibility
 - Role-specific order workflow
 - JMS order events through ActiveMQ Artemis
-- Admin dashboard for meals, categories, users and orders
+- Admin dashboard with restaurant statistics plus meals, categories, users and orders management
 - PostgreSQL persistence with JPA/Hibernate
 - Dockerized backend and frontend
 - Docker Compose full-stack environment
-- Backend unit tests, Angular service tests and API smoke tests in CI
+- Backend unit tests, Angular tests and API smoke tests in CI
 
 ## Role permissions
 
 | Role | Permissions |
 | --- | --- |
-| Customer | Register, log in, browse menu, create orders, view own orders |
+| Customer | Register, log in, browse/search/filter menu, create orders, view own orders |
 | Chef | View restaurant orders, `NEW -> PREPARING -> READY` |
 | Waiter | View restaurant orders, `READY -> SERVED -> PAID` |
 | Admin | Full management access and all valid order status transitions |
@@ -70,23 +70,32 @@ restaurant-ordering-system/
 ├── src/test/java/                 Backend tests
 ├── frontend/                      Angular application
 │   ├── src/app/
+│   ├── public/images/             Local UI image assets
 │   ├── Dockerfile
 │   └── nginx.conf
 ├── Dockerfile                     Backend image
 ├── compose.yaml                   Full Docker stack
+├── start.sh                       One-command full-stack startup
+├── stop.sh                        One-command shutdown
+├── TESTING.md                     Testing guide
+├── PRESENTATION.md                Teacher/presentation explanation guide
 ├── pom.xml
 └── README.md
 ```
 
-## Quick start with Docker
+## Quick start — one command
 
-The easiest way to run the complete application is:
+Requirements: Docker Desktop with Docker Compose.
+
+From the project root:
 
 ```bash
-docker compose up --build -d
+bash start.sh
 ```
 
-Then open:
+The script builds and starts PostgreSQL, ActiveMQ Artemis, Spring Boot and the Angular/Nginx frontend, then waits until the application is reachable.
+
+Open:
 
 ```text
 Frontend: http://localhost:4200
@@ -94,19 +103,21 @@ Backend:  http://localhost:8080
 Artemis:  http://localhost:8161
 ```
 
-Check containers:
+Stop the complete project with:
 
 ```bash
-docker compose ps
+bash stop.sh
 ```
 
-Stop the stack:
+You can also use Docker Compose directly:
 
 ```bash
+docker compose up --build -d
+docker compose ps
 docker compose down
 ```
 
-Delete the PostgreSQL volume as well:
+Delete the PostgreSQL volume as well only when you intentionally want a fresh database:
 
 ```bash
 docker compose down -v
@@ -265,13 +276,15 @@ Use a strong unique `JWT_SECRET` and non-development credentials for deployment.
 
 ## Tests
 
+For a complete explanation of the test suite and presentation workflow, see **`TESTING.md`**.
+
 ### Backend unit tests
 
 ```bash
 ./mvnw test
 ```
 
-The backend test suite covers important authentication, category, meal, user and order-workflow behavior, including role-specific order permissions.
+The backend suite covers authentication, category, meal, user and order-workflow behavior, including role-specific permissions.
 
 ### Frontend tests
 
@@ -299,6 +312,16 @@ GitHub Actions runs on pull requests and pushes to `master`. The pipeline execut
 4. End-to-end backend smoke test against PostgreSQL and ActiveMQ Artemis
 
 The smoke test starts the application, authenticates a seeded customer and creates a real order through the REST API.
+
+## Presentation / teacher guide
+
+A structured explanation of the architecture, JWT flow, database model, JMS usage, role permissions, demo sequence and common presentation questions is included in:
+
+```text
+PRESENTATION.md
+```
+
+This is the recommended document to review before presenting the project.
 
 ## Docker images
 
