@@ -23,14 +23,7 @@ class CategoryServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new CategoryServiceImpl();
-        var field = CategoryServiceImpl.class.getDeclaredFields()[0];
-        field.setAccessible(true);
-        try {
-            field.set(service, categoryRepository);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        service = new CategoryServiceImpl(categoryRepository);
     }
 
     @Test
