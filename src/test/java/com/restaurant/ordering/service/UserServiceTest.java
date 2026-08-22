@@ -42,12 +42,13 @@ class UserServiceTest {
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
         assertEquals("encoded", captor.getValue().getPassword());
-        assertEquals(Role.WAITER, response.role());
+        assertEquals(Role.WAITER, response.getRole());
     }
 
     @Test
     void createUserRejectsDuplicateUsername() {
         User existing = new User();
+        existing.setId(1L);
         existing.setUsername("waiter1");
         when(userRepository.findByUsernameIgnoreCase("waiter1")).thenReturn(Optional.of(existing));
 
@@ -82,7 +83,7 @@ class UserServiceTest {
 
         var response = service.setEnabled(7L, false);
 
-        assertFalse(response.enabled());
+        assertFalse(response.isEnabled());
     }
 
     @Test
