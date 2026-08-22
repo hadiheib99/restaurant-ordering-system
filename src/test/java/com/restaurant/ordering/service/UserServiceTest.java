@@ -48,7 +48,6 @@ class UserServiceTest {
     @Test
     void createUserRejectsDuplicateUsername() {
         User existing = new User();
-        existing.setId(1L);
         existing.setUsername("waiter1");
         when(userRepository.findByUsernameIgnoreCase("waiter1")).thenReturn(Optional.of(existing));
 
@@ -61,7 +60,7 @@ class UserServiceTest {
 
     @Test
     void updateUserKeepsPasswordWhenBlank() {
-        User existing = user(3L, "chef", "chef@example.com", "stored", Role.CHEF);
+        User existing = user("chef", "chef@example.com", "stored", Role.CHEF);
         when(userRepository.findById(3L)).thenReturn(Optional.of(existing));
         when(userRepository.findByUsernameIgnoreCase("chef-new")).thenReturn(Optional.empty());
         when(userRepository.findByEmailIgnoreCase("chef-new@example.com")).thenReturn(Optional.empty());
@@ -76,7 +75,7 @@ class UserServiceTest {
 
     @Test
     void setEnabledUpdatesUser() {
-        User existing = user(7L, "customer", "customer@example.com", "stored", Role.CUSTOMER);
+        User existing = user("customer", "customer@example.com", "stored", Role.CUSTOMER);
         existing.setEnabled(true);
         when(userRepository.findById(7L)).thenReturn(Optional.of(existing));
         when(userRepository.save(existing)).thenReturn(existing);
@@ -104,9 +103,8 @@ class UserServiceTest {
         return request;
     }
 
-    private static User user(Long id, String username, String email, String password, Role role) {
+    private static User user(String username, String email, String password, Role role) {
         User user = new User();
-        user.setId(id);
         user.setUsername(username);
         user.setEmail(email);
         user.setPassword(password);
