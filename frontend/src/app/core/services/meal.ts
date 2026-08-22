@@ -10,6 +10,7 @@ export interface MealRequest {
   price: number;
   categoryId: number;
   available: boolean;
+  imageUrl?: string | null;
 }
 
 @Injectable({
@@ -18,9 +19,7 @@ export interface MealRequest {
 export class MealService {
 
   private readonly http = inject(HttpClient);
-
-  private readonly apiUrl =
-    'http://localhost:8080/api/meals';
+  private readonly apiUrl = 'http://localhost:8080/api/meals';
 
   getMeals(): Observable<Meal[]> {
     return this.http.get<Meal[]>(this.apiUrl);
