@@ -2,6 +2,7 @@ package com.restaurant.ordering.auth.controller;
 
 import com.restaurant.ordering.auth.dto.LoginRequest;
 import com.restaurant.ordering.auth.dto.LoginResponse;
+import com.restaurant.ordering.auth.dto.RegisterRequest;
 import com.restaurant.ordering.auth.service.AuthService;
 import com.restaurant.ordering.dto.UserResponse;
 import com.restaurant.ordering.service.UserService;
@@ -24,6 +25,11 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    @PostMapping("/register")
+    public LoginResponse register(@RequestBody RegisterRequest request) {
+        return authService.register(request);
     }
 
     @GetMapping("/me")

@@ -28,5 +28,38 @@ services:
       - "8161:8161"
     restart: unless-stopped
 
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: restaurant-backend
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/restaurant_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      ARTEMIS_BROKER_URL: tcp://artemis:61616
+      ARTEMIS_USER: admin
+      ARTEMIS_PASSWORD: admin
+      APP_SEED_DATA: "true"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      artemis:
+        condition: service_started
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: restaurant-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
 volumes:
   restaurant_postgres_data:

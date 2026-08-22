@@ -9,6 +9,12 @@ export const routes: Routes = [
         .then(component => component.Login)
   },
   {
+    path: 'register',
+    loadComponent: () =>
+      import('./pages/register/register')
+        .then(component => component.Register)
+  },
+  {
     path: 'menu',
     canActivate: [roleGuard],
     data: { roles: ['CUSTOMER'] },

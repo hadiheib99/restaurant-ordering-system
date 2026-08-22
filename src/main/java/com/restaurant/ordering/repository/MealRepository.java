@@ -12,4 +12,6 @@ public interface MealRepository extends JpaRepository<Meal, Long> {
     List<Meal> findByCategoryId(Long categoryId);
 
     List<Meal> findByNameContainingIgnoreCase(String name);
+
+    boolean existsByNameIgnoreCase(String name);
 }
