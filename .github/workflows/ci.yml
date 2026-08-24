@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend:
-    name: Backend tests
+    name: Backend tests and JavaDoc
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,6 +23,9 @@ jobs:
 
       - name: Run backend tests
         run: bash ./mvnw test
+
+      - name: Generate JavaDoc
+        run: bash ./mvnw -DskipTests javadoc:javadoc
 
   frontend:
     name: Frontend tests and build
