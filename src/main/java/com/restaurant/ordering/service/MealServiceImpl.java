@@ -12,6 +12,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Transactional implementation of {@link MealService}.
+ *
+ * <p>The service validates referenced categories, maps incoming DTOs to JPA
+ * entities, persists meals and converts entities back to response DTOs.</p>
+ *
+ * @author Abdulhadi Heib
+ * @version 1.0
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -20,6 +29,7 @@ public class MealServiceImpl implements MealService {
     private final MealRepository mealRepository;
     private final CategoryService categoryService;
 
+    /** {@inheritDoc} */
     @Override
     public MealResponse createMeal(MealRequest mealRequest) {
         Category category = categoryService.getCategoryById(mealRequest.getCategoryId());
@@ -35,30 +45,42 @@ public class MealServiceImpl implements MealService {
         return convertToResponse(mealRepository.save(meal));
     }
 
+    /**
+     * {@inheritDoc}
+     * @throws ResourceNotFoundException when the meal does not exist
+     */
     @Override
     @Transactional(readOnly = true)
     public MealResponse getMealById(Long id) {
         return convertToResponse(findMeal(id));
     }
 
+    /** {@inheritDoc} */
     @Override
     @Transactional(readOnly = true)
     public List<MealResponse> getAllMeals() {
         return mealRepository.findAll().stream().map(this::convertToResponse).toList();
     }
 
+    /** {@inheritDoc} */
     @Override
     @Transactional(readOnly = true)
     public List<MealResponse> getMealsByCategory(Long categoryId) {
         return mealRepository.findByCategoryId(categoryId).stream().map(this::convertToResponse).toList();
     }
 
+    /** {@inheritDoc} */
     @Override
     @Transactional(readOnly = true)
     public List<MealResponse> getAvailableMeals() {
         return mealRepository.findByAvailableTrue().stream().map(this::convertToResponse).toList();
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>Only non-null request fields replace existing entity values.</p>
+     * @throws ResourceNotFoundException when the meal or requested category does not exist
+     */
     @Override
     public MealResponse updateMeal(Long id, MealRequest mealRequest) {
         Meal meal = findMeal(id);
@@ -73,16 +95,31 @@ public class MealServiceImpl implements MealService {
         return convertToResponse(mealRepository.save(meal));
     }
 
+    /**
+     * {@inheritDoc}
+     * @throws ResourceNotFoundException when the meal does not exist
+     */
     @Override
     public void deleteMeal(Long id) {
         mealRepository.delete(findMeal(id));
     }
 
+    /**
+     * Loads a meal entity or fails with a domain-friendly exception.
+     * @param id unique meal identifier
+     * @return persistent meal entity
+     * @throws ResourceNotFoundException when no matching meal exists
+     */
     private Meal findMeal(Long id) {
         return mealRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Meal not found with id: " + id));
     }
 
+    /**
+     * Converts a persistent meal entity into the REST response representation.
+     * @param meal persistent meal entity
+     * @return meal response DTO including category information
+     */
     private MealResponse convertToResponse(Meal meal) {
         return new MealResponse(
                 meal.getId(),

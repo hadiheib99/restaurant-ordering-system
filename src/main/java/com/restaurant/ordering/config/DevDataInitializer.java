@@ -17,6 +17,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
+/**
+ * Seeds development/demo data when {@code app.seed-data} is enabled.
+ *
+ * <p>The initializer creates missing demonstration accounts, menu categories and
+ * meals without overwriting existing users. It also hides legacy shawarma menu
+ * entries so repeated application starts remain idempotent.</p>
+ *
+ * @author Abdulhadi Heib
+ * @version 1.0
+ */
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "app.seed-data", havingValue = "true", matchIfMissing = true)
@@ -27,6 +37,10 @@ public class DevDataInitializer implements ApplicationRunner {
     private final MealRepository mealRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Executes all development-data initialization inside one transaction.
+     * @param args Spring Boot application arguments
+     */
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
@@ -35,6 +49,7 @@ public class DevDataInitializer implements ApplicationRunner {
         hideLegacyShawarmaMeals();
     }
 
+    /** Creates the default admin, waiter, customer and chef accounts when missing. */
     private void seedUsers() {
         createUserIfMissing("admin", "Admin123", "Restaurant", "Manager", "admin@restaurant.com", "0501234567", Role.ADMIN);
         createUserIfMissing("waiter1", "Waiter123", "Daniel", "Cohen", "waiter1@restaurant.com", "0502222222", Role.WAITER);
@@ -42,6 +57,9 @@ public class DevDataInitializer implements ApplicationRunner {
         createUserIfMissing("chef1", "Chef123", "Kitchen", "Chef", "chef1@restaurant.com", "0503333333", Role.CHEF);
     }
 
+    /**
+     * Creates one demonstration user only when both username and email are unused.
+     */
     private void createUserIfMissing(String username, String password, String firstName, String lastName,
                                      String email, String phone, Role role) {
         if (userRepository.existsByEmailIgnoreCase(email) || userRepository.existsByUsernameIgnoreCase(username)) return;
@@ -58,6 +76,7 @@ public class DevDataInitializer implements ApplicationRunner {
         userRepository.save(user);
     }
 
+    /** Creates or refreshes the demonstration categories and meals. */
     private void seedMenu() {
         Category pizza = category("Pizza", "Freshly baked pizzas");
         Category burgers = category("Burgers", "Grilled burgers and sandwiches");
@@ -86,14 +105,14 @@ public class DevDataInitializer implements ApplicationRunner {
                 "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=900&q=80");
         meal("Cola", "Chilled 330ml soft drink", "10.00", drinks,
                 "https://images.unsplash.com/photo-1629203851122-3726ecdf080e?auto=format&fit=crop&w=900&q=80");
-        meal("Fresh Lemonade", "Fresh lemon, mint and ice", "16.00", drinks,
-                "/images/fresh-lemonade.svg");
+        meal("Fresh Lemonade", "Fresh lemon, mint and ice", "16.00", drinks, "/images/fresh-lemonade.svg");
         meal("Chocolate Cake", "Rich chocolate cake with chocolate sauce", "28.00", desserts,
                 "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=900&q=80");
         meal("Cheesecake", "Creamy cheesecake with berry topping", "30.00", desserts,
                 "https://images.unsplash.com/photo-1524351199678-941a58a3df50?auto=format&fit=crop&w=900&q=80");
     }
 
+    /** Marks legacy shawarma/shwarma entries as unavailable instead of deleting historical data. */
     private void hideLegacyShawarmaMeals() {
         mealRepository.findByNameContainingIgnoreCase("shawarma").forEach(meal -> {
             meal.setAvailable(false);
@@ -105,6 +124,7 @@ public class DevDataInitializer implements ApplicationRunner {
         });
     }
 
+    /** Finds a category by name or creates it when missing. */
     private Category category(String name, String description) {
         return categoryRepository.findByNameIgnoreCase(name).orElseGet(() -> {
             Category category = new Category();
@@ -114,6 +134,7 @@ public class DevDataInitializer implements ApplicationRunner {
         });
     }
 
+    /** Creates or refreshes one demonstration meal with the supplied menu data. */
     private void meal(String name, String description, String price, Category category, String imageUrl) {
         Meal meal = mealRepository.findByNameIgnoreCase(name).orElseGet(Meal::new);
         meal.setName(name);

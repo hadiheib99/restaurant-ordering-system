@@ -17,6 +17,8 @@ A full-stack restaurant ordering application built with Spring Boot, Angular, Po
 - Dockerized backend and frontend
 - Docker Compose full-stack environment
 - Backend unit tests, Angular tests and API smoke tests in CI
+- JavaDoc documentation for backend classes and public methods
+- TSDoc/JSDoc-style documentation for Angular classes and application methods
 
 ## Role permissions
 
@@ -273,6 +275,40 @@ admin / admin
 | `APP_SEED_DATA` | `true` |
 
 Use a strong unique `JWT_SECRET` and non-development credentials for deployment.
+
+## API documentation
+
+The source code is documented in the same style used for API documentation in the course:
+
+- Backend Java classes use **JavaDoc** comments (`/** ... */`).
+- Public methods document their purpose and, when applicable, `@param`, `@return` and `@throws` values.
+- Angular TypeScript classes and methods use **TSDoc/JSDoc-style** documentation comments.
+
+### Generate JavaDoc HTML
+
+From the project root run:
+
+```bash
+./mvnw javadoc:javadoc
+```
+
+The generated documentation can then be opened from:
+
+```text
+target/reports/apidocs/index.html
+```
+
+On macOS you can open it directly with:
+
+```bash
+open target/reports/apidocs/index.html
+```
+
+The generated site contains browsable documentation for the backend packages, classes, interfaces and public methods.
+
+### Angular documentation
+
+Angular documentation is kept directly beside the TypeScript code using documentation comments. This makes component, service, guard, interceptor and model behavior visible in IntelliJ/VS Code tooltips and while reading the source.
 
 ## Tests
 

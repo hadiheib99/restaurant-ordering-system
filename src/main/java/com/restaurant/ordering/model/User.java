@@ -4,6 +4,16 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * JPA entity representing an authenticated restaurant-system user.
+ *
+ * <p>Accounts have a unique username/email, BCrypt password hash, contact data,
+ * application {@link Role}, enabled state and creation timestamp. The same model
+ * supports customers and restaurant staff.</p>
+ *
+ * @author Abdulhadi Heib
+ * @version 1.0
+ */
 @Entity
 @Table(
         name = "users",
@@ -21,6 +31,7 @@ public class User {
     @Column(nullable = false, length = 50)
     private String username;
 
+    /** Encoded password; plain-text passwords are never stored. */
     @Column(nullable = false)
     private String password;
 
@@ -46,83 +57,64 @@ public class User {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    public User() {
-    }
+    /** Creates an empty entity required by JPA. */
+    public User() { }
 
+    /** Sets the account creation timestamp immediately before insertion. */
     @PrePersist
-    public void prePersist() {
-        createdAt = LocalDateTime.now();
-    }
+    public void prePersist() { createdAt = LocalDateTime.now(); }
 
-    public Long getId() {
-        return id;
-    }
+    /** @return database-generated user identifier */
+    public Long getId() { return id; }
 
-    public String getUsername() {
-        return username;
-    }
+    /** @return unique login/display username */
+    public String getUsername() { return username; }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
+    /** @param username new unique username */
+    public void setUsername(String username) { this.username = username; }
 
-    public String getPassword() {
-        return password;
-    }
+    /** @return stored encoded password */
+    public String getPassword() { return password; }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+    /** @param password encoded password to persist */
+    public void setPassword(String password) { this.password = password; }
 
-    public String getFirstName() {
-        return firstName;
-    }
+    /** @return user's first name */
+    public String getFirstName() { return firstName; }
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
+    /** @param firstName user's first name */
+    public void setFirstName(String firstName) { this.firstName = firstName; }
 
-    public String getLastName() {
-        return lastName;
-    }
+    /** @return user's last name */
+    public String getLastName() { return lastName; }
 
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
+    /** @param lastName user's last name */
+    public void setLastName(String lastName) { this.lastName = lastName; }
 
-    public String getEmail() {
-        return email;
-    }
+    /** @return unique account email address */
+    public String getEmail() { return email; }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    /** @param email unique account email address */
+    public void setEmail(String email) { this.email = email; }
 
-    public String getPhone() {
-        return phone;
-    }
+    /** @return contact phone number */
+    public String getPhone() { return phone; }
 
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
+    /** @param phone contact phone number */
+    public void setPhone(String phone) { this.phone = phone; }
 
-    public Role getRole() {
-        return role;
-    }
+    /** @return authorization role assigned to the account */
+    public Role getRole() { return role; }
 
-    public void setRole(Role role) {
-        this.role = role;
-    }
+    /** @param role authorization role to assign */
+    public void setRole(Role role) { this.role = role; }
 
-    public boolean isEnabled() {
-        return enabled;
-    }
+    /** @return true when the account may authenticate */
+    public boolean isEnabled() { return enabled; }
 
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
+    /** @param enabled whether authentication is permitted */
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+    /** @return timestamp at which the account was created */
+    public LocalDateTime getCreatedAt() { return createdAt; }
 }

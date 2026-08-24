@@ -5,13 +5,19 @@ import { OrderService } from '../../core/services/order';
 import { Order } from '../../core/models/order';
 import { AuthService } from '../../core/services/auth';
 
+/**
+ * Shared order-management page used by customers, chefs, waiters and admins.
+ *
+ * The component renders only actions appropriate to the current JWT role,
+ * supports role-specific status transitions and cancellation rules, and provides
+ * XML receipt/report downloads where authorized.
+ */
 @Component({
   selector: 'app-orders',
   templateUrl: './orders.html',
   styleUrl: './orders.scss'
 })
 export class Orders implements OnInit {
-
   private readonly orderService = inject(OrderService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
@@ -23,72 +29,71 @@ export class Orders implements OnInit {
   readonly canDelete = this.role === 'ADMIN';
   readonly canExportReport = this.role === 'ADMIN';
 
-  ngOnInit(): void {
-    this.loadOrders();
-  }
+  /** Loads visible orders when Angular initializes the page. */
+  ngOnInit(): void { this.loadOrders(); }
 
+  /** Requests orders visible to the authenticated role. */
   loadOrders(): void {
     this.orderService.getOrders().subscribe({
-      next: orders => {
-        this.orders.set(orders);
-        this.loading.set(false);
-      },
-      error: error => {
-        console.error(error);
-        this.errorMessage.set('Could not load orders.');
-        this.loading.set(false);
-      }
+      next: orders => { this.orders.set(orders); this.loading.set(false); },
+      error: error => { console.error(error); this.errorMessage.set('Could not load orders.'); this.loading.set(false); }
     });
   }
 
+  /**
+   * Applies a normal role-specific next-status transition.
+   * @param order order being updated
+   * @param status requested new status
+   */
   updateStatus(order: Order, status: string): void {
     const allowedStatus = this.nextAllowedStatus(order.status);
     if (allowedStatus !== status) return;
     this.applyStatus(order, status);
   }
 
+  /** @returns whether the current role may offer cancellation for the order's current state */
   canCancel(order: Order): boolean {
     const beforeReady = order.status === 'NEW' || order.status === 'PREPARING';
     return beforeReady && (this.role === 'CUSTOMER' || this.role === 'WAITER' || this.role === 'ADMIN');
   }
 
+  /** Confirms and requests a CANCELLED transition for an eligible order. */
   cancelOrder(order: Order): void {
     if (!this.canCancel(order) || !confirm(`Cancel order #${order.id}?`)) return;
     this.applyStatus(order, 'CANCELLED');
   }
 
+  /** Downloads one order receipt as XML. */
   downloadReceipt(order: Order): void {
     this.orderService.getReceiptXml(order.id).subscribe({
       next: blob => this.downloadBlob(blob, `order-${order.id}-receipt.xml`),
-      error: error => {
-        console.error(error);
-        alert('Could not export the XML receipt.');
-      }
+      error: error => { console.error(error); alert('Could not export the XML receipt.'); }
     });
   }
 
+  /** Downloads the administrator-only restaurant report as XML. */
   exportReport(): void {
     if (!this.canExportReport) return;
     this.orderService.getReportXml().subscribe({
       next: blob => this.downloadBlob(blob, 'restaurant-orders-report.xml'),
-      error: error => {
-        console.error(error);
-        alert('Could not export the XML report.');
-      }
+      error: error => { console.error(error); alert('Could not export the XML report.'); }
     });
   }
 
+  /** Permanently deletes an order when the current user is an administrator. */
   deleteOrder(order: Order): void {
     if (!this.canDelete || !confirm(`Delete order #${order.id}?`)) return;
     this.orderService.deleteOrder(order.id).subscribe({
       next: () => this.orders.update(orders => orders.filter(current => current.id !== order.id)),
-      error: error => {
-        console.error(error);
-        alert('Could not delete the order');
-      }
+      error: error => { console.error(error); alert('Could not delete the order'); }
     });
   }
 
+  /**
+   * Determines the next normal status offered by the UI for the current role.
+   * @param status current order status
+   * @returns next permitted status or null when no normal action is available
+   */
   nextAllowedStatus(status: string): string | null {
     if (this.role === 'ADMIN') return this.nextStatus(status);
     if (this.role === 'CHEF') {
@@ -104,11 +109,11 @@ export class Orders implements OnInit {
     return null;
   }
 
+  /** Sends a status request and replaces the matching order with the server response. */
   private applyStatus(order: Order, status: string): void {
     this.orderService.updateStatus(order.id, status).subscribe({
-      next: updatedOrder => {
-        this.orders.update(orders => orders.map(current => current.id === updatedOrder.id ? updatedOrder : current));
-      },
+      next: updatedOrder => this.orders.update(orders =>
+        orders.map(current => current.id === updatedOrder.id ? updatedOrder : current)),
       error: error => {
         console.error(error);
         alert(status === 'CANCELLED'
@@ -118,6 +123,7 @@ export class Orders implements OnInit {
     });
   }
 
+  /** Returns the next step in the complete administrator workflow. */
   private nextStatus(status: string): string | null {
     switch (status) {
       case 'NEW': return 'PREPARING';
@@ -128,6 +134,7 @@ export class Orders implements OnInit {
     }
   }
 
+  /** Creates a temporary browser URL and triggers a file download. */
   private downloadBlob(blob: Blob, fileName: string): void {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -137,10 +144,10 @@ export class Orders implements OnInit {
     URL.revokeObjectURL(url);
   }
 
-  goBack(): void {
-    void this.router.navigateByUrl(this.authService.defaultRoute());
-  }
+  /** Navigates back to the landing page appropriate to the current role. */
+  goBack(): void { void this.router.navigateByUrl(this.authService.defaultRoute()); }
 
+  /** Ends the current session and returns to login. */
   logout(): void {
     this.authService.logout();
     void this.router.navigate(['/login']);
