@@ -22,5 +22,9 @@ public interface OrderService {
 
     OrderResponse updateStatus(Long id, OrderStatus status);
 
+    String exportReceiptXml(Long id);
+
+    String exportReportXml();
+
     void deleteOrder(Long id);
 }

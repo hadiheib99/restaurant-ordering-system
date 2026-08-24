@@ -31,10 +31,15 @@ export class OrderService {
   }
 
   updateStatus(orderId: number, status: string): Observable<Order> {
-    return this.http.patch<Order>(
-      `${this.apiUrl}/${orderId}/status?value=${status}`,
-      {}
-    );
+    return this.http.patch<Order>(`${this.apiUrl}/${orderId}/status?value=${status}`, {});
+  }
+
+  getReceiptXml(orderId: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${orderId}/receipt.xml`, { responseType: 'blob' });
+  }
+
+  getReportXml(): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/report.xml`, { responseType: 'blob' });
   }
 
   deleteOrder(orderId: number): Observable<void> {

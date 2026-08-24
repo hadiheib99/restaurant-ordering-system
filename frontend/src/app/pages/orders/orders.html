@@ -6,6 +6,9 @@
     </div>
 
     <div class="header-actions">
+      @if (canExportReport) {
+        <button type="button" class="xml-button" (click)="exportReport()">Export XML Report</button>
+      }
       @if (role === 'CUSTOMER' || role === 'ADMIN') {
         <button type="button" (click)="goBack()">
           {{ role === 'CUSTOMER' ? 'Back to Menu' : 'Back to Admin' }}
@@ -32,8 +35,7 @@
                 <span>{{ order.customerName }}</span>
               }
             </div>
-
-            <span class="status">{{ order.status }}</span>
+            <span class="status" [class.cancelled]="order.status === 'CANCELLED'">{{ order.status }}</span>
           </div>
 
           <div class="items">
@@ -49,19 +51,18 @@
             <strong>Total: ₪{{ order.totalPrice }}</strong>
 
             <div class="order-actions">
+              <button type="button" class="receipt-button" (click)="downloadReceipt(order)">Receipt XML</button>
+
               @if (nextAllowedStatus(order.status); as next) {
-                <button type="button" (click)="updateStatus(order, next)">
-                  Move to {{ next }}
-                </button>
+                <button type="button" (click)="updateStatus(order, next)">Move to {{ next }}</button>
+              }
+
+              @if (canCancel(order)) {
+                <button type="button" class="danger" (click)="cancelOrder(order)">Cancel Order</button>
               }
 
               @if (canDelete) {
-                <button
-                  type="button"
-                  class="danger"
-                  (click)="deleteOrder(order)">
-                  Delete
-                </button>
+                <button type="button" class="danger subtle" (click)="deleteOrder(order)">Delete</button>
               }
             </div>
           </div>

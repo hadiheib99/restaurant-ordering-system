@@ -21,6 +21,7 @@ export class Orders implements OnInit {
   readonly errorMessage = signal('');
   readonly role = this.authService.getRole();
   readonly canDelete = this.role === 'ADMIN';
+  readonly canExportReport = this.role === 'ADMIN';
 
   ngOnInit(): void {
     this.loadOrders();
@@ -42,35 +43,45 @@ export class Orders implements OnInit {
 
   updateStatus(order: Order, status: string): void {
     const allowedStatus = this.nextAllowedStatus(order.status);
+    if (allowedStatus !== status) return;
+    this.applyStatus(order, status);
+  }
 
-    if (allowedStatus !== status) {
-      return;
-    }
+  canCancel(order: Order): boolean {
+    const beforeReady = order.status === 'NEW' || order.status === 'PREPARING';
+    return beforeReady && (this.role === 'CUSTOMER' || this.role === 'WAITER' || this.role === 'ADMIN');
+  }
 
-    this.orderService.updateStatus(order.id, status).subscribe({
-      next: updatedOrder => {
-        this.orders.update(orders =>
-          orders.map(current =>
-            current.id === updatedOrder.id ? updatedOrder : current
-          )
-        );
-      },
+  cancelOrder(order: Order): void {
+    if (!this.canCancel(order) || !confirm(`Cancel order #${order.id}?`)) return;
+    this.applyStatus(order, 'CANCELLED');
+  }
+
+  downloadReceipt(order: Order): void {
+    this.orderService.getReceiptXml(order.id).subscribe({
+      next: blob => this.downloadBlob(blob, `order-${order.id}-receipt.xml`),
       error: error => {
         console.error(error);
-        alert('You do not have permission to perform this status change.');
+        alert('Could not export the XML receipt.');
+      }
+    });
+  }
+
+  exportReport(): void {
+    if (!this.canExportReport) return;
+    this.orderService.getReportXml().subscribe({
+      next: blob => this.downloadBlob(blob, 'restaurant-orders-report.xml'),
+      error: error => {
+        console.error(error);
+        alert('Could not export the XML report.');
       }
     });
   }
 
   deleteOrder(order: Order): void {
-    if (!this.canDelete || !confirm(`Delete order #${order.id}?`)) {
-      return;
-    }
-
+    if (!this.canDelete || !confirm(`Delete order #${order.id}?`)) return;
     this.orderService.deleteOrder(order.id).subscribe({
-      next: () => this.orders.update(orders =>
-        orders.filter(current => current.id !== order.id)
-      ),
+      next: () => this.orders.update(orders => orders.filter(current => current.id !== order.id)),
       error: error => {
         console.error(error);
         alert('Could not delete the order');
@@ -79,31 +90,32 @@ export class Orders implements OnInit {
   }
 
   nextAllowedStatus(status: string): string | null {
-    if (this.role === 'ADMIN') {
-      return this.nextStatus(status);
-    }
-
+    if (this.role === 'ADMIN') return this.nextStatus(status);
     if (this.role === 'CHEF') {
-      if (status === 'NEW') {
-        return 'PREPARING';
-      }
-      if (status === 'PREPARING') {
-        return 'READY';
-      }
+      if (status === 'NEW') return 'PREPARING';
+      if (status === 'PREPARING') return 'READY';
       return null;
     }
-
     if (this.role === 'WAITER') {
-      if (status === 'READY') {
-        return 'SERVED';
-      }
-      if (status === 'SERVED') {
-        return 'PAID';
-      }
+      if (status === 'READY') return 'SERVED';
+      if (status === 'SERVED') return 'PAID';
       return null;
     }
-
     return null;
+  }
+
+  private applyStatus(order: Order, status: string): void {
+    this.orderService.updateStatus(order.id, status).subscribe({
+      next: updatedOrder => {
+        this.orders.update(orders => orders.map(current => current.id === updatedOrder.id ? updatedOrder : current));
+      },
+      error: error => {
+        console.error(error);
+        alert(status === 'CANCELLED'
+          ? 'This order can no longer be cancelled.'
+          : 'You do not have permission to perform this status change.');
+      }
+    });
   }
 
   private nextStatus(status: string): string | null {
@@ -114,6 +126,15 @@ export class Orders implements OnInit {
       case 'SERVED': return 'PAID';
       default: return null;
     }
+  }
+
+  private downloadBlob(blob: Blob, fileName: string): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   goBack(): void {
