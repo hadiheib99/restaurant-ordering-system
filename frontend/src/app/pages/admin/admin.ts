@@ -8,6 +8,13 @@ import { OrderService } from '../../core/services/order';
 import { UserService } from '../../core/services/user';
 import { Order } from '../../core/models/order';
 
+/**
+ * Administrator dashboard that summarizes restaurant activity.
+ *
+ * Combines meals, orders and users from multiple REST services and derives
+ * dashboard statistics such as active orders, paid orders, revenue and today's
+ * order count with Angular computed signals.
+ */
 @Component({
   selector: 'app-admin',
   imports: [RouterLink],
@@ -28,33 +35,27 @@ export class Admin {
   readonly availableMeals = signal(0);
   readonly totalCustomers = signal(0);
 
-  readonly activeOrders = computed(() =>
-    this.orders().filter(order => order.status !== 'PAID').length
-  );
-
-  readonly paidOrders = computed(() =>
-    this.orders().filter(order => order.status === 'PAID').length
-  );
-
-  readonly revenue = computed(() =>
-    this.orders()
-      .filter(order => order.status === 'PAID')
-      .reduce((sum, order) => sum + Number(order.totalPrice), 0)
-  );
-
+  /** Number of orders not yet marked PAID. */
+  readonly activeOrders = computed(() => this.orders().filter(order => order.status !== 'PAID').length);
+  /** Number of completed paid orders. */
+  readonly paidOrders = computed(() => this.orders().filter(order => order.status === 'PAID').length);
+  /** Revenue calculated only from orders with PAID status. */
+  readonly revenue = computed(() => this.orders()
+    .filter(order => order.status === 'PAID')
+    .reduce((sum, order) => sum + Number(order.totalPrice), 0));
+  /** Number of orders created on the browser's current calendar day. */
   readonly todayOrders = computed(() => {
     const today = new Date().toDateString();
     return this.orders().filter(order => new Date(order.createdAt).toDateString() === today).length;
   });
 
-  constructor() {
-    this.loadStatistics();
-  }
+  /** Loads dashboard statistics when the component is created. */
+  constructor() { this.loadStatistics(); }
 
+  /** Fetches meals, orders and users in parallel and updates all dashboard counters. */
   loadStatistics(): void {
     this.loadingStats.set(true);
     this.statsError.set('');
-
     forkJoin({
       meals: this.mealService.getMeals(),
       orders: this.orderService.getOrders(),
@@ -74,6 +75,7 @@ export class Admin {
     });
   }
 
+  /** Clears the JWT and returns the administrator to the login page. */
   logout(): void {
     this.authService.logout();
     void this.router.navigate(['/login']);
