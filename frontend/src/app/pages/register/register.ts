@@ -4,6 +4,13 @@ import { Router } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth';
 
+/**
+ * Public customer-registration page.
+ *
+ * Validates profile/contact/password input, calls the backend registration API,
+ * stores the returned JWT through {@link AuthService} and opens the customer menu
+ * after a successful registration.
+ */
 @Component({
   selector: 'app-register',
   imports: [ReactiveFormsModule],
@@ -18,6 +25,7 @@ export class Register {
   readonly loading = signal(false);
   readonly errorMessage = signal('');
 
+  /** Reactive registration form mirroring backend customer-registration fields. */
   readonly registerForm = this.formBuilder.nonNullable.group({
     firstName: ['', Validators.required],
     lastName: ['', Validators.required],
@@ -27,6 +35,7 @@ export class Register {
     password: ['', [Validators.required, Validators.minLength(8)]]
   });
 
+  /** Validates and submits a new customer account to the authentication service. */
   submit(): void {
     if (this.registerForm.invalid || this.loading()) {
       this.registerForm.markAllAsTouched();
@@ -35,7 +44,6 @@ export class Register {
 
     this.loading.set(true);
     this.errorMessage.set('');
-
     this.authService.register(this.registerForm.getRawValue()).subscribe({
       next: () => {
         this.loading.set(false);
@@ -43,9 +51,7 @@ export class Register {
       },
       error: error => {
         this.loading.set(false);
-        this.errorMessage.set(
-          error?.error?.message ?? error?.error?.error ?? 'Could not create account.'
-        );
+        this.errorMessage.set(error?.error?.message ?? error?.error?.error ?? 'Could not create account.');
       }
     });
   }
