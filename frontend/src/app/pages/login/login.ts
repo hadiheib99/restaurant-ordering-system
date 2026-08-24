@@ -1,13 +1,16 @@
 import { Component, inject, signal } from '@angular/core';
-import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators
-} from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth';
 
+/**
+ * Authentication page for existing restaurant users.
+ *
+ * Validates email/password input, calls the authentication REST service, stores
+ * the returned JWT through {@link AuthService} and redirects each role to its
+ * appropriate landing page.
+ */
 @Component({
   selector: 'app-login',
   imports: [ReactiveFormsModule],
@@ -22,17 +25,20 @@ export class Login {
   readonly loading = signal(false);
   readonly errorMessage = signal('');
 
+  /** Reactive login form with required email and password validation. */
   readonly loginForm = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required]]
   });
 
+  /** Redirects users who already have a valid JWT instead of showing login again. */
   constructor() {
     if (this.authService.isLoggedIn()) {
       void this.router.navigateByUrl(this.authService.defaultRoute());
     }
   }
 
+  /** Validates and submits the login form, then redirects according to the JWT role. */
   submit(): void {
     if (this.loginForm.invalid || this.loading()) {
       this.loginForm.markAllAsTouched();
@@ -41,7 +47,6 @@ export class Login {
 
     this.loading.set(true);
     this.errorMessage.set('');
-
     this.authService.login(this.loginForm.getRawValue()).subscribe({
       next: () => {
         this.loading.set(false);
@@ -49,13 +54,10 @@ export class Login {
       },
       error: error => {
         this.loading.set(false);
-
         if (error.status === 401) {
           this.errorMessage.set('Invalid email or password.');
         } else {
-          this.errorMessage.set(
-            'The server could not be reached. Make sure Spring Boot is running.'
-          );
+          this.errorMessage.set('The server could not be reached. Make sure Spring Boot is running.');
         }
       }
     });
