@@ -14,6 +14,17 @@ import org.springframework.stereotype.Service;
 
 import java.util.Locale;
 
+/**
+ * Authentication service for login and customer self-registration.
+ *
+ * <p>Credentials are verified by Spring Security, passwords are hashed before
+ * persistence, and successful authentication produces a JWT through
+ * {@link JwtService}. Public registration always creates a {@link Role#CUSTOMER}
+ * account so users cannot self-register as privileged staff.</p>
+ *
+ * @author Abdulhadi Heib
+ * @version 1.0
+ */
 @Service
 public class AuthService {
 
@@ -22,32 +33,44 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
-    public AuthService(
-            AuthenticationManager authenticationManager,
-            UserRepository userRepository,
-            JwtService jwtService,
-            PasswordEncoder passwordEncoder
-    ) {
+    /**
+     * Creates the authentication service with required security dependencies.
+     * @param authenticationManager Spring Security authentication manager
+     * @param userRepository user persistence repository
+     * @param jwtService JWT generation service
+     * @param passwordEncoder password hashing component
+     */
+    public AuthService(AuthenticationManager authenticationManager,
+                       UserRepository userRepository,
+                       JwtService jwtService,
+                       PasswordEncoder passwordEncoder) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
     }
 
+    /**
+     * Authenticates an existing account and returns a signed JWT.
+     * @param request email and password credentials
+     * @return JWT login response
+     * @throws org.springframework.security.core.AuthenticationException when credentials are invalid
+     */
     public LoginResponse login(LoginRequest request) {
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow();
-
+        User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
         return new LoginResponse(generateToken(user));
     }
 
+    /**
+     * Registers a new customer account after validating all input fields.
+     * @param request customer registration data
+     * @return JWT response for the newly created account
+     * @throws IllegalArgumentException when required data is invalid or already registered
+     */
     public LoginResponse register(RegisterRequest request) {
         validateRegistration(request);
 
@@ -65,6 +88,7 @@ public class AuthService {
         return new LoginResponse(generateToken(saved));
     }
 
+    /** Validates presence, password length, email format and unique account fields. */
     private void validateRegistration(RegisterRequest request) {
         if (request == null || isBlank(request.username()) || isBlank(request.password()) ||
                 isBlank(request.firstName()) || isBlank(request.lastName()) ||
@@ -89,10 +113,12 @@ public class AuthService {
         }
     }
 
+    /** Generates a JWT containing the user's email and application role. */
     private String generateToken(User user) {
         return jwtService.generateToken(user.getEmail(), user.getRole().name());
     }
 
+    /** @return true when the supplied text is null, empty or whitespace only */
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
     }
