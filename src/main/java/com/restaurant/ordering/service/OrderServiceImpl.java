@@ -19,6 +19,17 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+/**
+ * Main business-service implementation for restaurant orders.
+ *
+ * <p>This service coordinates order persistence, customer ownership rules,
+ * role-specific status transitions, price calculations, JMS kitchen events and
+ * XML receipt/report export. Authorization is checked both by Spring Security
+ * and by object-level rules in this class.</p>
+ *
+ * @author Abdulhadi Heib
+ * @version 1.0
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -29,6 +40,10 @@ public class OrderServiceImpl implements OrderService {
     private final MealRepository mealRepository;
     private final OrderProducer orderProducer;
 
+    /**
+     * {@inheritDoc}
+     * <p>Staff receive all orders; customers receive only orders owned by their authenticated email.</p>
+     */
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getAllOrders() {
@@ -38,6 +53,11 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findByCustomerEmail(getCurrentUserEmail()).stream().map(this::toResponse).toList();
     }
 
+    /**
+     * {@inheritDoc}
+     * @throws ResourceNotFoundException when the order does not exist
+     * @throws AccessDeniedException when a customer attempts to view another customer's order
+     */
     @Override
     @Transactional(readOnly = true)
     public OrderResponse getOrderById(Long id) {
@@ -46,6 +66,10 @@ public class OrderServiceImpl implements OrderService {
         return toResponse(order);
     }
 
+    /**
+     * {@inheritDoc}
+     * @throws AccessDeniedException when the current user is not restaurant staff
+     */
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getOrdersByStatus(OrderStatus status) {
@@ -53,6 +77,10 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findByStatus(status).stream().map(this::toResponse).toList();
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>Customers may request only their own order history; staff may request any customer.</p>
+     */
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getOrdersByCustomer(Long customerId) {
@@ -65,6 +93,10 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findByCustomerId(customerId).stream().map(this::toResponse).toList();
     }
 
+    /**
+     * {@inheritDoc}
+     * @throws AccessDeniedException when the current user is not restaurant staff
+     */
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getOrdersByWaiter(Long waiterId) {
@@ -72,6 +104,17 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findByWaiterId(waiterId).stream().map(this::toResponse).toList();
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Validates customer/waiter roles, verifies meal availability, captures the
+     * current unit price, calculates every subtotal and total, persists the complete
+     * aggregate and publishes a NEW JMS event.</p>
+     *
+     * @throws ResourceNotFoundException when a referenced user or meal does not exist
+     * @throws IllegalArgumentException when roles or meal availability are invalid
+     * @throws AccessDeniedException when a customer creates an order for another customer
+     */
     @Override
     public OrderResponse createOrder(OrderRequest request) {
         User customer = findUser(request.getCustomerId());
@@ -120,6 +163,15 @@ public class OrderServiceImpl implements OrderService {
         return toResponse(savedOrder);
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Both the workflow transition and the authenticated role are validated
+     * before persistence. Successful changes publish a JMS status event.</p>
+     *
+     * @throws IllegalArgumentException when the requested workflow transition is invalid
+     * @throws AccessDeniedException when the current role is not allowed to perform the transition
+     */
     @Override
     public OrderResponse updateStatus(Long id, OrderStatus newStatus) {
         RestaurantOrder order = findOrder(id);
@@ -131,6 +183,10 @@ public class OrderServiceImpl implements OrderService {
         return toResponse(savedOrder);
     }
 
+    /**
+     * {@inheritDoc}
+     * @throws AccessDeniedException when a customer requests another customer's receipt
+     */
     @Override
     @Transactional(readOnly = true)
     public String exportReceiptXml(Long id) {
@@ -139,6 +195,11 @@ public class OrderServiceImpl implements OrderService {
         return receiptXml(order);
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>The report includes total orders, paid revenue, status counts and a compact order list.</p>
+     * @throws AccessDeniedException when the current user is not an administrator
+     */
     @Override
     @Transactional(readOnly = true)
     public String exportReportXml() {
@@ -174,22 +235,26 @@ public class OrderServiceImpl implements OrderService {
         return xml.toString();
     }
 
+    /** {@inheritDoc} */
     @Override
     public void deleteOrder(Long id) {
         RestaurantOrder order = findOrder(id);
         orderRepository.delete(order);
     }
 
+    /** Loads an order entity or throws a domain-specific not-found exception. */
     private RestaurantOrder findOrder(Long id) {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + id));
     }
 
+    /** Loads a user entity or throws a domain-specific not-found exception. */
     private User findUser(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + id));
     }
 
+    /** Ensures customers can only access their own orders while staff may access all orders. */
     private void ensureCanView(RestaurantOrder order) {
         if (isStaff()) return;
         if (!order.getCustomer().getEmail().equalsIgnoreCase(getCurrentUserEmail())) {
@@ -197,24 +262,29 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
+    /** Ensures the current authenticated user has a restaurant-staff role. */
     private void ensureStaff() {
         if (!isStaff()) throw new AccessDeniedException("This operation is only available to restaurant staff");
     }
 
+    /** @return true for ADMIN, WAITER or CHEF roles */
     private boolean isStaff() {
         return hasRole("ROLE_ADMIN") || hasRole("ROLE_WAITER") || hasRole("ROLE_CHEF");
     }
 
+    /** Checks whether the current authentication contains one specific authority. */
     private boolean hasRole(String role) {
         return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals(role));
     }
 
+    /** @return email/subject of the currently authenticated JWT principal */
     private String getCurrentUserEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication.getName();
     }
 
+    /** Builds and publishes a compact JMS event for an order. */
     private void sendOrderEvent(RestaurantOrder order) {
         OrderMessage message = new OrderMessage(
                 order.getId(), order.getCustomer().getId(), getFullName(order.getCustomer()),
@@ -223,6 +293,7 @@ public class OrderServiceImpl implements OrderService {
         orderProducer.sendOrderEvent(message);
     }
 
+    /** Converts an order aggregate and line items into a REST response DTO. */
     private OrderResponse toResponse(RestaurantOrder order) {
         List<OrderItemResponse> itemResponses = order.getItems().stream()
                 .map(item -> OrderItemResponse.builder()
@@ -249,10 +320,12 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
+    /** @return first and last name combined for display and XML output */
     private String getFullName(User user) {
         return user.getFirstName() + " " + user.getLastName();
     }
 
+    /** Validates that a requested order-status move follows the defined lifecycle. */
     private void validateStatusTransition(OrderStatus currentStatus, OrderStatus newStatus) {
         if (currentStatus == newStatus) return;
         boolean validTransition = switch (currentStatus) {
@@ -267,6 +340,7 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
+    /** Applies role/ownership rules to an otherwise valid status transition. */
     private void validateStatusPermission(RestaurantOrder order, OrderStatus newStatus) {
         OrderStatus currentStatus = order.getStatus();
         if (hasRole("ROLE_ADMIN")) return;
@@ -299,6 +373,7 @@ public class OrderServiceImpl implements OrderService {
         );
     }
 
+    /** Serializes a complete order as a simple XML receipt. */
     private String receiptXml(RestaurantOrder order) {
         StringBuilder xml = new StringBuilder();
         xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -321,6 +396,7 @@ public class OrderServiceImpl implements OrderService {
         return xml.toString();
     }
 
+    /** Escapes XML-sensitive characters before untrusted text is inserted into generated XML. */
     private String xmlEscape(String value) {
         if (value == null) return "";
         return value.replace("&", "&amp;")
