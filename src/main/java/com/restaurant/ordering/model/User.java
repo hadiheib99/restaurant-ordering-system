@@ -64,57 +64,129 @@ public class User {
     @PrePersist
     public void prePersist() { createdAt = LocalDateTime.now(); }
 
-    /** @return database-generated user identifier */
+    /**
+     * Returns the database-generated identifier for this user.
+     *
+     * @return user identifier
+     */
     public Long getId() { return id; }
 
-    /** @return unique login/display username */
+    /**
+     * Returns the unique username associated with this account.
+     *
+     * @return account username
+     */
     public String getUsername() { return username; }
 
-    /** @param username new unique username */
+    /**
+     * Changes the account username.
+     *
+     * @param username new unique username
+     */
     public void setUsername(String username) { this.username = username; }
 
-    /** @return stored encoded password */
+    /**
+     * Returns the encoded password stored for authentication.
+     *
+     * @return stored encoded password
+     */
     public String getPassword() { return password; }
 
-    /** @param password encoded password to persist */
+    /**
+     * Changes the encoded password stored for this account.
+     *
+     * @param password encoded password to persist
+     */
     public void setPassword(String password) { this.password = password; }
 
-    /** @return user's first name */
+    /**
+     * Returns the user's first name.
+     *
+     * @return user's first name
+     */
     public String getFirstName() { return firstName; }
 
-    /** @param firstName user's first name */
+    /**
+     * Changes the user's first name.
+     *
+     * @param firstName user's first name
+     */
     public void setFirstName(String firstName) { this.firstName = firstName; }
 
-    /** @return user's last name */
+    /**
+     * Returns the user's last name.
+     *
+     * @return user's last name
+     */
     public String getLastName() { return lastName; }
 
-    /** @param lastName user's last name */
+    /**
+     * Changes the user's last name.
+     *
+     * @param lastName user's last name
+     */
     public void setLastName(String lastName) { this.lastName = lastName; }
 
-    /** @return unique account email address */
+    /**
+     * Returns the unique email address used as the authentication principal.
+     *
+     * @return unique account email address
+     */
     public String getEmail() { return email; }
 
-    /** @param email unique account email address */
+    /**
+     * Changes the unique email address associated with this account.
+     *
+     * @param email unique account email address
+     */
     public void setEmail(String email) { this.email = email; }
 
-    /** @return contact phone number */
+    /**
+     * Returns the contact phone number stored for the user.
+     *
+     * @return contact phone number
+     */
     public String getPhone() { return phone; }
 
-    /** @param phone contact phone number */
+    /**
+     * Changes the user's contact phone number.
+     *
+     * @param phone contact phone number
+     */
     public void setPhone(String phone) { this.phone = phone; }
 
-    /** @return authorization role assigned to the account */
+    /**
+     * Returns the authorization role assigned to this account.
+     *
+     * @return assigned application role
+     */
     public Role getRole() { return role; }
 
-    /** @param role authorization role to assign */
+    /**
+     * Changes the authorization role assigned to this account.
+     *
+     * @param role authorization role to assign
+     */
     public void setRole(Role role) { this.role = role; }
 
-    /** @return true when the account may authenticate */
+    /**
+     * Indicates whether this account is currently allowed to authenticate.
+     *
+     * @return {@code true} when the account is enabled
+     */
     public boolean isEnabled() { return enabled; }
 
-    /** @param enabled whether authentication is permitted */
+    /**
+     * Enables or disables authentication for this account.
+     *
+     * @param enabled whether authentication is permitted
+     */
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
 
-    /** @return timestamp at which the account was created */
+    /**
+     * Returns the timestamp at which this account was created.
+     *
+     * @return account creation timestamp
+     */
     public LocalDateTime getCreatedAt() { return createdAt; }
 }
