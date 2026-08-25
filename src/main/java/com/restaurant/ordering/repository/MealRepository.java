@@ -30,14 +30,6 @@ public interface MealRepository extends JpaRepository<Meal, Long> {
     List<Meal> findByCategoryId(Long categoryId);
 
     /**
-     * Finds meals whose names contain the supplied text without considering case.
-     *
-     * @param name partial meal name
-     * @return case-insensitive matching meals
-     */
-    List<Meal> findByNameContainingIgnoreCase(String name);
-
-    /**
      * Finds a meal by its exact name without considering case.
      *
      * @param name exact meal name
