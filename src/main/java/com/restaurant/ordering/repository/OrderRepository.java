@@ -13,12 +13,36 @@ import java.util.List;
  * @version 1.0
  */
 public interface OrderRepository extends JpaRepository<RestaurantOrder, Long> {
-    /** @param status lifecycle status @return orders currently in that status */
+
+    /**
+     * Retrieves orders that currently have one lifecycle status.
+     *
+     * @param status lifecycle status used for filtering
+     * @return orders currently in the supplied status
+     */
     List<RestaurantOrder> findByStatus(OrderStatus status);
-    /** @param customerId customer identifier @return orders owned by that customer */
+
+    /**
+     * Retrieves all orders owned by one customer.
+     *
+     * @param customerId customer identifier
+     * @return orders owned by the specified customer
+     */
     List<RestaurantOrder> findByCustomerId(Long customerId);
-    /** @param waiterId waiter identifier @return orders assigned to that waiter */
+
+    /**
+     * Retrieves all orders assigned to one waiter.
+     *
+     * @param waiterId waiter identifier
+     * @return orders assigned to the specified waiter
+     */
     List<RestaurantOrder> findByWaiterId(Long waiterId);
-    /** @param email customer email @return orders owned by that authenticated customer */
+
+    /**
+     * Retrieves orders belonging to the customer with the supplied email address.
+     *
+     * @param email customer email address
+     * @return orders owned by the authenticated customer
+     */
     List<RestaurantOrder> findByCustomerEmail(String email);
 }
