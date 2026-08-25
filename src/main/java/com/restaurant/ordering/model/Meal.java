@@ -42,48 +42,101 @@ public class Meal {
     public Meal() {
     }
 
-    /** @return database-generated meal identifier */
+    /**
+     * Returns the database-generated identifier of this meal.
+     *
+     * @return meal identifier
+     */
     public Long getId() { return id; }
 
-    /** @return meal name shown in the menu */
+    /**
+     * Returns the name displayed in the restaurant menu.
+     *
+     * @return meal name
+     */
     public String getName() { return name; }
 
-    /** @param name new meal name */
+    /**
+     * Changes the name displayed for this meal.
+     *
+     * @param name new meal name
+     */
     public void setName(String name) { this.name = name; }
 
-    /** @return meal description */
+    /**
+     * Returns the descriptive text shown with the meal.
+     *
+     * @return meal description
+     */
     public String getDescription() { return description; }
 
-    /** @param description new meal description */
+    /**
+     * Changes the descriptive text shown with the meal.
+     *
+     * @param description new meal description
+     */
     public void setDescription(String description) { this.description = description; }
 
-    /** @return current menu price */
+    /**
+     * Returns the current menu price.
+     *
+     * @return current meal price
+     */
     public BigDecimal getPrice() { return price; }
 
-    /** @param price new menu price */
+    /**
+     * Changes the current menu price.
+     *
+     * @param price new menu price
+     */
     public void setPrice(BigDecimal price) { this.price = price; }
 
-    /** @return true when the meal may currently be ordered */
+    /**
+     * Indicates whether customers may currently order this meal.
+     *
+     * @return {@code true} when the meal is available for ordering
+     */
     public boolean isAvailable() { return available; }
 
-    /** @param available whether customers may order this meal */
+    /**
+     * Changes whether customers may currently order this meal.
+     *
+     * @param available whether the meal is available for ordering
+     */
     public void setAvailable(boolean available) { this.available = available; }
 
-    /** @return URL used to display the meal image */
+    /**
+     * Returns the image URL used by the Angular menu.
+     *
+     * @return configured meal-image URL
+     */
     public String getImageUrl() { return imageUrl; }
 
-    /** @param imageUrl new image URL */
+    /**
+     * Changes the image URL used by the Angular menu.
+     *
+     * @param imageUrl new image URL
+     */
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
-    /** @return category that groups the meal */
+    /**
+     * Returns the category that groups this meal in the menu.
+     *
+     * @return associated meal category
+     */
     public Category getCategory() { return category; }
 
-    /** @param category category to assign to the meal */
+    /**
+     * Assigns this meal to a restaurant category.
+     *
+     * @param category category to assign to the meal
+     */
     public void setCategory(Category category) { this.category = category; }
 
     /**
-     * Wrapper-style availability accessor used by DTO mapping code.
-     * @return current availability as a Boolean
+     * Returns availability using the wrapper type expected by DTO mapping code.
+     *
+     * @return current availability as a {@link Boolean}
      */
     public Boolean getAvailable() { return available; }
 }

@@ -16,6 +16,7 @@ public interface CategoryService {
 
     /**
      * Persists a new category.
+     *
      * @param category category to create
      * @return persisted category
      */
@@ -23,16 +24,22 @@ public interface CategoryService {
 
     /**
      * Finds a category by identifier.
+     *
      * @param id unique category identifier
      * @return matching category
      */
     Category getCategoryById(Long id);
 
-    /** @return every persisted category */
+    /**
+     * Retrieves every persisted restaurant category.
+     *
+     * @return all available categories
+     */
     List<Category> getAllCategories();
 
     /**
      * Updates an existing category.
+     *
      * @param id unique category identifier
      * @param category new category values
      * @return updated category
@@ -41,6 +48,7 @@ public interface CategoryService {
 
     /**
      * Deletes a category.
+     *
      * @param id unique category identifier
      */
     void deleteCategory(Long id);

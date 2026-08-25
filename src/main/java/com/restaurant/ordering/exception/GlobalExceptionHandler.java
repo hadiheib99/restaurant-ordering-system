@@ -25,19 +25,34 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    /** @param ex missing-resource exception @return HTTP 404 error response */
+    /**
+     * Handles requests for domain resources that do not exist.
+     *
+     * @param ex missing-resource exception
+     * @return HTTP 404 response containing the standardized error body
+     */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    /** @param ex invalid business/input argument @return HTTP 400 error response */
+    /**
+     * Handles invalid arguments and rejected business input.
+     *
+     * @param ex invalid business or input argument
+     * @return HTTP 400 response containing the standardized error body
+     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleBadRequest(IllegalArgumentException ex) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    /** @param ex authorization failure @return HTTP 403 error response */
+    /**
+     * Handles authorization failures raised by the security or service layer.
+     *
+     * @param ex authorization failure
+     * @return HTTP 403 response containing the standardized error body
+     */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
         return error(HttpStatus.FORBIDDEN, ex.getMessage());
@@ -45,8 +60,9 @@ public class GlobalExceptionHandler {
 
     /**
      * Converts bean-validation failures to a concise field-level message.
+     *
      * @param ex Spring MVC validation exception
-     * @return HTTP 400 error response
+     * @return HTTP 400 response containing the first field-validation message
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
@@ -56,19 +72,35 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, message);
     }
 
-    /** @param ex database integrity conflict @return HTTP 409 error response */
+    /**
+     * Handles database integrity conflicts such as invalid deletes or duplicate data.
+     *
+     * @param ex database integrity conflict
+     * @return HTTP 409 response containing a client-safe conflict message
+     */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleConflict(DataIntegrityViolationException ex) {
         return error(HttpStatus.CONFLICT, "The operation conflicts with existing restaurant data");
     }
 
-    /** @param ex unhandled server exception @return HTTP 500 response without leaking internals */
+    /**
+     * Handles otherwise unhandled server exceptions without exposing internals.
+     *
+     * @param ex unhandled server exception
+     * @return HTTP 500 response containing a generic client-safe message
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
         return error(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected server error occurred");
     }
 
-    /** Builds the common timestamp/status/error/message response body. */
+    /**
+     * Builds the common timestamp/status/error/message response body.
+     *
+     * @param status HTTP status returned to the client
+     * @param message human-readable error message
+     * @return response entity containing the standardized JSON error structure
+     */
     private ResponseEntity<Map<String, Object>> error(HttpStatus status, String message) {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("timestamp", LocalDateTime.now());
