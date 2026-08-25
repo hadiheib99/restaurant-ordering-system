@@ -28,6 +28,7 @@ public class MealController {
 
     /**
      * Creates a new meal in the restaurant menu.
+     *
      * @param mealRequest meal data supplied by the client
      * @return HTTP 201 response containing the created meal
      */
@@ -38,6 +39,7 @@ public class MealController {
 
     /**
      * Retrieves a meal by its unique identifier.
+     *
      * @param id unique meal identifier
      * @return HTTP 200 response containing the requested meal
      */
@@ -46,7 +48,11 @@ public class MealController {
         return new ResponseEntity<>(mealService.getMealById(id), HttpStatus.OK);
     }
 
-    /** @return HTTP 200 response containing every meal in the menu */
+    /**
+     * Retrieves every meal currently stored in the restaurant menu.
+     *
+     * @return HTTP 200 response containing all meals
+     */
     @GetMapping
     public ResponseEntity<List<MealResponse>> getAllMeals() {
         return new ResponseEntity<>(mealService.getAllMeals(), HttpStatus.OK);
@@ -54,6 +60,7 @@ public class MealController {
 
     /**
      * Retrieves all meals that belong to one category.
+     *
      * @param categoryId unique category identifier
      * @return HTTP 200 response containing matching meals
      */
@@ -62,7 +69,11 @@ public class MealController {
         return new ResponseEntity<>(mealService.getMealsByCategory(categoryId), HttpStatus.OK);
     }
 
-    /** @return HTTP 200 response containing meals currently available for ordering */
+    /**
+     * Retrieves meals that customers may currently order.
+     *
+     * @return HTTP 200 response containing available meals
+     */
     @GetMapping("/available")
     public ResponseEntity<List<MealResponse>> getAvailableMeals() {
         return new ResponseEntity<>(mealService.getAvailableMeals(), HttpStatus.OK);
@@ -70,6 +81,7 @@ public class MealController {
 
     /**
      * Replaces editable data of an existing meal.
+     *
      * @param id unique meal identifier
      * @param mealRequest updated meal data
      * @return HTTP 200 response containing the updated meal
@@ -81,6 +93,7 @@ public class MealController {
 
     /**
      * Deletes a meal from the menu.
+     *
      * @param id unique meal identifier
      * @return HTTP 204 response after successful deletion
      */
