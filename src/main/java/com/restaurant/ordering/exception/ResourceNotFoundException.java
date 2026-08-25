@@ -11,13 +11,18 @@ package com.restaurant.ordering.exception;
  */
 public class ResourceNotFoundException extends RuntimeException {
 
-    /** @param message human-readable description of the missing resource */
+    /**
+     * Creates a not-found exception with a human-readable explanation.
+     *
+     * @param message human-readable description of the missing resource
+     */
     public ResourceNotFoundException(String message) {
         super(message);
     }
 
     /**
-     * Creates an exception that preserves an underlying cause.
+     * Creates a not-found exception that preserves an underlying cause.
+     *
      * @param message human-readable description
      * @param cause original exception that caused the failure
      */
