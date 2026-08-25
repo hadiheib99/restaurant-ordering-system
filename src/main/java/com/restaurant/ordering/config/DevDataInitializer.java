@@ -21,8 +21,7 @@ import java.math.BigDecimal;
  * Seeds development/demo data when {@code app.seed-data} is enabled.
  *
  * <p>The initializer creates missing demonstration accounts, menu categories and
- * meals without overwriting existing users. It also hides legacy shawarma menu
- * entries so repeated application starts remain idempotent.</p>
+ * meals without overwriting existing users.</p>
  *
  * @author Abdulhadi Heib
  * @version 1.0
@@ -46,7 +45,6 @@ public class DevDataInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         seedUsers();
         seedMenu();
-        hideLegacyShawarmaMeals();
     }
 
     /** Creates the default admin, waiter, customer and chef accounts when missing. */
@@ -110,18 +108,6 @@ public class DevDataInitializer implements ApplicationRunner {
                 "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=900&q=80");
         meal("Cheesecake", "Creamy cheesecake with berry topping", "30.00", desserts,
                 "https://images.unsplash.com/photo-1524351199678-941a58a3df50?auto=format&fit=crop&w=900&q=80");
-    }
-
-    /** Marks legacy shawarma/shwarma entries as unavailable instead of deleting historical data. */
-    private void hideLegacyShawarmaMeals() {
-        mealRepository.findByNameContainingIgnoreCase("shawarma").forEach(meal -> {
-            meal.setAvailable(false);
-            mealRepository.save(meal);
-        });
-        mealRepository.findByNameContainingIgnoreCase("shwarma").forEach(meal -> {
-            meal.setAvailable(false);
-            mealRepository.save(meal);
-        });
     }
 
     /** Finds a category by name or creates it when missing. */
