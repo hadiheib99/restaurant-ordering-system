@@ -107,6 +107,20 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <!--
+                      Validate JavaDoc structure, references and HTML, but do not
+                      warn about documentation for compiler/Lombok-generated API
+                      such as implicit constructors. Public application classes
+                      and business methods are documented in the source itself.
+                    -->
+                    <doclint>all,-missing</doclint>
+                    <failOnWarnings>true</failOnWarnings>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
