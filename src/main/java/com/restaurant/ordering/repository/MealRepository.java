@@ -13,14 +13,43 @@ import java.util.Optional;
  * @version 1.0
  */
 public interface MealRepository extends JpaRepository<Meal, Long> {
-    /** @return all meals currently marked available */
+
+    /**
+     * Retrieves every meal currently marked as available.
+     *
+     * @return meals that customers may currently order
+     */
     List<Meal> findByAvailableTrue();
-    /** @param categoryId category identifier @return meals belonging to the category */
+
+    /**
+     * Retrieves meals that belong to one category.
+     *
+     * @param categoryId category identifier
+     * @return meals belonging to the specified category
+     */
     List<Meal> findByCategoryId(Long categoryId);
-    /** @param name partial meal name @return case-insensitive matching meals */
+
+    /**
+     * Finds meals whose names contain the supplied text without considering case.
+     *
+     * @param name partial meal name
+     * @return case-insensitive matching meals
+     */
     List<Meal> findByNameContainingIgnoreCase(String name);
-    /** @param name exact meal name @return matching meal when present */
+
+    /**
+     * Finds a meal by its exact name without considering case.
+     *
+     * @param name exact meal name
+     * @return optional containing the matching meal when present
+     */
     Optional<Meal> findByNameIgnoreCase(String name);
-    /** @param name exact meal name @return true when the name already exists */
+
+    /**
+     * Checks whether a meal with the supplied name already exists.
+     *
+     * @param name exact meal name
+     * @return {@code true} when the name already exists, ignoring letter case
+     */
     boolean existsByNameIgnoreCase(String name);
 }
