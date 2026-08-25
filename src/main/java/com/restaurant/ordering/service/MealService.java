@@ -15,24 +15,57 @@ import java.util.List;
  */
 public interface MealService {
 
-    /** @param mealRequest data for the new meal @return created meal */
+    /**
+     * Creates a new meal from client-supplied menu data.
+     *
+     * @param mealRequest data for the new meal
+     * @return created meal
+     */
     MealResponse createMeal(MealRequest mealRequest);
 
-    /** @param id unique meal identifier @return matching meal */
+    /**
+     * Retrieves one meal by its unique identifier.
+     *
+     * @param id unique meal identifier
+     * @return matching meal
+     */
     MealResponse getMealById(Long id);
 
-    /** @return all meals in the restaurant menu */
+    /**
+     * Retrieves every meal stored in the restaurant menu.
+     *
+     * @return all meals in the restaurant menu
+     */
     List<MealResponse> getAllMeals();
 
-    /** @param categoryId category identifier @return meals in the category */
+    /**
+     * Retrieves meals associated with one category.
+     *
+     * @param categoryId category identifier
+     * @return meals in the category
+     */
     List<MealResponse> getMealsByCategory(Long categoryId);
 
-    /** @return meals currently available for ordering */
+    /**
+     * Retrieves meals that are currently available for ordering.
+     *
+     * @return currently available meals
+     */
     List<MealResponse> getAvailableMeals();
 
-    /** @param id unique meal identifier @param mealRequest updated meal data @return updated meal */
+    /**
+     * Updates the editable values of an existing meal.
+     *
+     * @param id unique meal identifier
+     * @param mealRequest updated meal data
+     * @return updated meal
+     */
     MealResponse updateMeal(Long id, MealRequest mealRequest);
 
-    /** @param id unique meal identifier */
+    /**
+     * Deletes a meal by its identifier.
+     *
+     * @param id unique meal identifier
+     */
     void deleteMeal(Long id);
 }
