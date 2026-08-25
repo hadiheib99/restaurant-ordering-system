@@ -12,9 +12,20 @@ import java.util.Optional;
  * @version 1.0
  */
 public interface CategoryRepository extends JpaRepository<Category, Long> {
-    /** @param name category name @return true when the name already exists, ignoring case */
+
+    /**
+     * Checks whether a category with the supplied name already exists.
+     *
+     * @param name category name to check
+     * @return {@code true} when the name already exists, ignoring letter case
+     */
     boolean existsByNameIgnoreCase(String name);
 
-    /** @param name category name @return matching category when present */
+    /**
+     * Finds a category by its name without considering letter case.
+     *
+     * @param name category name to search for
+     * @return optional containing the matching category when present
+     */
     Optional<Category> findByNameIgnoreCase(String name);
 }
