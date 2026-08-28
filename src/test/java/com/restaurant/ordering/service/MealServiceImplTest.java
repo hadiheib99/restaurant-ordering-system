@@ -19,6 +19,16 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for {@link MealServiceImpl} menu-meal business behavior.
+ *
+ * <p>The suite verifies category assignment, default availability, entity-to-DTO
+ * mapping, partial meal updates and missing-resource handling using mocked service
+ * and repository collaborators.</p>
+ *
+ * @author Abdulhadi Heib
+ * @version 1.0
+ */
 @ExtendWith(MockitoExtension.class)
 class MealServiceImplTest {
 
@@ -26,11 +36,13 @@ class MealServiceImplTest {
     @Mock private CategoryService categoryService;
     private MealServiceImpl service;
 
+    /** Creates a fresh meal service with mocked dependencies before every test. */
     @BeforeEach
     void setUp() {
         service = new MealServiceImpl(mealRepository, categoryService);
     }
 
+    /** Verifies that meal creation resolves the category and defaults availability to true. */
     @Test
     void createMealUsesCategoryAndDefaultsAvailabilityToTrue() {
         Category category = category(2L, "Pizza");
@@ -47,6 +59,7 @@ class MealServiceImplTest {
         assertTrue(response.getAvailable());
     }
 
+    /** Verifies that available meal entities are mapped to API response objects. */
     @Test
     void getAvailableMealsMapsEntitiesToResponses() {
         Category category = category(1L, "Drinks");
@@ -60,6 +73,7 @@ class MealServiceImplTest {
         assertEquals("Drinks", result.getFirst().getCategoryName());
     }
 
+    /** Verifies that meal updates replace supplied values and preserve omitted values. */
     @Test
     void updateMealUpdatesOnlyProvidedValues() {
         Category category = category(1L, "Pizza");
@@ -79,12 +93,20 @@ class MealServiceImplTest {
         assertFalse(result.getAvailable());
     }
 
+    /** Verifies that requesting an unknown meal raises the domain not-found exception. */
     @Test
     void missingMealThrowsResourceNotFound() {
         when(mealRepository.findById(99L)).thenReturn(Optional.empty());
         assertThrows(ResourceNotFoundException.class, () -> service.getMealById(99L));
     }
 
+    /**
+     * Creates a compact category fixture for meal-service tests.
+     *
+     * @param id category identifier
+     * @param name category name
+     * @return category fixture with the supplied values
+     */
     private static Category category(Long id, String name) {
         Category category = new Category();
         category.setId(id);
@@ -92,6 +114,14 @@ class MealServiceImplTest {
         return category;
     }
 
+    /**
+     * Creates a compact meal fixture with a default description and price.
+     *
+     * @param name meal name
+     * @param category category assigned to the meal
+     * @param available whether the meal is currently orderable
+     * @return initialized meal fixture
+     */
     private static Meal meal(String name, Category category, boolean available) {
         Meal meal = new Meal();
         meal.setName(name);
