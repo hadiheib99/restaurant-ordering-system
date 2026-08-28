@@ -15,17 +15,29 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for {@link CategoryServiceImpl} category-management behavior.
+ *
+ * <p>The suite verifies create, read, partial update, missing-resource handling
+ * and deletion while isolating the service from the database with a mocked
+ * {@link CategoryRepository}.</p>
+ *
+ * @author Abdulhadi Heib
+ * @version 1.0
+ */
 @ExtendWith(MockitoExtension.class)
 class CategoryServiceImplTest {
 
     @Mock private CategoryRepository categoryRepository;
     private CategoryServiceImpl service;
 
+    /** Creates the category service with its mocked repository before every test. */
     @BeforeEach
     void setUp() {
         service = new CategoryServiceImpl(categoryRepository);
     }
 
+    /** Verifies that creating a category delegates persistence to the repository. */
     @Test
     void createCategorySavesCategory() {
         Category category = new Category();
@@ -36,6 +48,7 @@ class CategoryServiceImplTest {
         verify(categoryRepository).save(category);
     }
 
+    /** Verifies that retrieving all categories returns the repository data unchanged. */
     @Test
     void getAllCategoriesReturnsRepositoryData() {
         Category pizza = new Category();
@@ -45,6 +58,7 @@ class CategoryServiceImplTest {
         assertEquals(List.of(pizza), service.getAllCategories());
     }
 
+    /** Verifies that a partial update changes supplied values while retaining omitted fields. */
     @Test
     void updateCategoryChangesOnlyProvidedFields() {
         Category existing = new Category();
@@ -63,12 +77,14 @@ class CategoryServiceImplTest {
         assertEquals("Keep me", result.getDescription());
     }
 
+    /** Verifies that requesting an unknown category raises the domain not-found exception. */
     @Test
     void missingCategoryThrowsResourceNotFound() {
         when(categoryRepository.findById(99L)).thenReturn(Optional.empty());
         assertThrows(ResourceNotFoundException.class, () -> service.getCategoryById(99L));
     }
 
+    /** Verifies that an existing category can be deleted by identifier. */
     @Test
     void deleteCategoryRequiresExistingId() {
         when(categoryRepository.existsById(5L)).thenReturn(true);

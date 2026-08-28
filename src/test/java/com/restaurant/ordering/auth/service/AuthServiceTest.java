@@ -22,6 +22,16 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for {@link AuthService} authentication and customer registration behavior.
+ *
+ * <p>The suite verifies credential authentication, JWT creation, input normalization,
+ * password encoding, duplicate-email protection and password-strength validation while
+ * replacing external collaborators with Mockito mocks.</p>
+ *
+ * @author Abdulhadi Heib
+ * @version 1.0
+ */
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
@@ -32,11 +42,13 @@ class AuthServiceTest {
 
     private AuthService authService;
 
+    /** Creates a fresh service instance backed by mocked collaborators before each test. */
     @BeforeEach
     void setUp() {
         authService = new AuthService(authenticationManager, userRepository, jwtService, passwordEncoder);
     }
 
+    /** Verifies that login authenticates the credentials and returns the generated JWT. */
     @Test
     void loginAuthenticatesAndReturnsJwt() {
         LoginRequest request = new LoginRequest();
@@ -56,6 +68,7 @@ class AuthServiceTest {
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
     }
 
+    /** Verifies that registration normalizes fields, encodes the password and creates an enabled CUSTOMER. */
     @Test
     void registerCreatesEnabledCustomerWithEncodedPassword() {
         RegisterRequest request = new RegisterRequest(
@@ -84,6 +97,7 @@ class AuthServiceTest {
         assertEquals("new-token", response.getToken());
     }
 
+    /** Verifies that an already registered email is rejected without persisting a new user. */
     @Test
     void registerRejectsDuplicateEmail() {
         RegisterRequest request = new RegisterRequest(
@@ -101,6 +115,7 @@ class AuthServiceTest {
         verify(userRepository, never()).save(any());
     }
 
+    /** Verifies that a weak password is rejected before any user is saved. */
     @Test
     void registerRejectsWeakPassword() {
         RegisterRequest request = new RegisterRequest(
