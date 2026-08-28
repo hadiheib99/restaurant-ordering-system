@@ -19,6 +19,16 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for {@link UserService} administrator user-management behavior.
+ *
+ * <p>The suite verifies password encoding, role persistence, duplicate-username
+ * validation, password preservation during partial updates, enabled-state changes
+ * and missing-user handling with mocked persistence and encoding collaborators.</p>
+ *
+ * @author Abdulhadi Heib
+ * @version 1.0
+ */
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
@@ -26,11 +36,13 @@ class UserServiceTest {
     @Mock private PasswordEncoder passwordEncoder;
     private UserService service;
 
+    /** Creates a fresh user service with mocked collaborators before every test. */
     @BeforeEach
     void setUp() {
         service = new UserService(userRepository, passwordEncoder);
     }
 
+    /** Verifies that creating a user encodes the supplied password and persists the requested role. */
     @Test
     void createUserEncodesPasswordAndPersistsRole() {
         UserRequest request = request("waiter1", "waiter@example.com", "Password1", Role.WAITER);
@@ -45,6 +57,7 @@ class UserServiceTest {
         assertEquals(Role.WAITER, response.getRole());
     }
 
+    /** Verifies that a duplicate username is rejected without storing another user. */
     @Test
     void createUserRejectsDuplicateUsername() {
         User existing = new User();
@@ -58,6 +71,7 @@ class UserServiceTest {
         verify(userRepository, never()).save(any());
     }
 
+    /** Verifies that leaving the password blank during an update retains the existing encoded password. */
     @Test
     void updateUserKeepsPasswordWhenBlank() {
         User existing = user("chef", "chef@example.com", "stored", Role.CHEF);
@@ -73,6 +87,7 @@ class UserServiceTest {
         verify(passwordEncoder, never()).encode(anyString());
     }
 
+    /** Verifies that the administrator can change whether an existing user is enabled. */
     @Test
     void setEnabledUpdatesUser() {
         User existing = user("customer", "customer@example.com", "stored", Role.CUSTOMER);
@@ -85,12 +100,22 @@ class UserServiceTest {
         assertFalse(response.isEnabled());
     }
 
+    /** Verifies that requesting a nonexistent user raises the domain not-found exception. */
     @Test
     void missingUserThrowsResourceNotFound() {
         when(userRepository.findById(404L)).thenReturn(Optional.empty());
         assertThrows(ResourceNotFoundException.class, () -> service.getUserById(404L));
     }
 
+    /**
+     * Creates a request fixture shared by user-management tests.
+     *
+     * @param username account username
+     * @param email account email
+     * @param password raw password value
+     * @param role requested restaurant role
+     * @return initialized user request fixture
+     */
     private static UserRequest request(String username, String email, String password, Role role) {
         UserRequest request = new UserRequest();
         request.setUsername(username);
@@ -103,6 +128,15 @@ class UserServiceTest {
         return request;
     }
 
+    /**
+     * Creates a user entity fixture with common display values.
+     *
+     * @param username account username
+     * @param email account email
+     * @param password stored encoded password placeholder
+     * @param role restaurant role
+     * @return initialized user fixture
+     */
     private static User user(String username, String email, String password, Role role) {
         User user = new User();
         user.setUsername(username);
