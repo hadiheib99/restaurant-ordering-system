@@ -10,7 +10,7 @@ A full-stack restaurant ordering application built with Spring Boot, Angular, Po
 - Responsive restaurant menu with meal images, search and category filters
 - Shopping cart with quantity controls and order placement
 - Customer order history and live status visibility
-- Role-specific order workflow
+- Role-specific order workflow and cancellation rules
 - JMS order events through ActiveMQ Artemis
 - XML receipt export for individual orders
 - Administrator XML restaurant report export
@@ -21,15 +21,16 @@ A full-stack restaurant ordering application built with Spring Boot, Angular, Po
 - Backend unit tests, Angular tests and API smoke tests in CI
 - JavaDoc documentation for backend classes and public methods
 - TSDoc/JSDoc-style documentation for Angular classes and application methods
+- Environment-based secret handling with Git-ignored local credentials
 
 ## Role permissions
 
 | Role | Permissions |
 | --- | --- |
-| Customer | Register, log in, browse/search/filter menu, create orders, view own orders |
+| Customer | Register, log in, browse/search/filter menu, create orders, view own orders, cancel own order before `READY`, download own receipt |
 | Chef | View restaurant orders, `NEW -> PREPARING -> READY` |
-| Waiter | View restaurant orders, `READY -> SERVED -> PAID` |
-| Admin | Full management access and all valid order status transitions |
+| Waiter | View restaurant orders, cancel before `READY`, `READY -> SERVED -> PAID` |
+| Admin | Full management access, all valid order transitions and XML report export |
 
 Valid order lifecycle:
 
@@ -37,7 +38,7 @@ Valid order lifecycle:
 NEW -> PREPARING -> READY -> SERVED -> PAID
 ```
 
-`NEW` and `PREPARING` may also be cancelled where allowed by the backend workflow.
+`NEW` and `PREPARING` may also be cancelled where allowed by backend role and workflow rules.
 
 ## Technology stack
 
@@ -69,7 +70,7 @@ NEW -> PREPARING -> READY -> SERVED -> PAID
 
 The project intentionally demonstrates the technologies required by the course while using Spring, which is permitted for the project implementation:
 
-1. **REST Web Services** — Spring MVC REST controllers expose HTTP endpoints used by the Angular client.
+1. **REST Web Services** — Spring MVC controllers expose HTTP endpoints used by the Angular client.
 2. **JPA / Hibernate** — entities, repositories and relationships persist restaurant data in PostgreSQL.
 3. **JMS (Java Message Service)** — Spring JMS publishes order events through ActiveMQ Artemis and a listener consumes them asynchronously.
 
@@ -80,19 +81,20 @@ The project also uses **XML** as an additional course-related data format for do
 ```text
 restaurant-ordering-system/
 ├── .github/workflows/ci.yml
-├── src/main/java/                 Spring Boot application
-├── src/test/java/                 Backend tests
-├── frontend/                      Angular application
+├── .env.example                  Safe template; no real credentials
+├── src/main/java/                Spring Boot application
+├── src/test/java/                Backend tests
+├── frontend/                     Angular application
 │   ├── src/app/
-│   ├── public/images/             Local UI image assets
+│   ├── public/images/
 │   ├── Dockerfile
 │   └── nginx.conf
-├── Dockerfile                     Backend image
-├── compose.yaml                   Full Docker stack
-├── start.sh                       One-command full-stack startup
-├── stop.sh                        One-command shutdown
-├── TESTING.md                     Testing guide
-├── PRESENTATION.md                Teacher/presentation explanation guide
+├── Dockerfile                    Backend image
+├── compose.yaml                  Full Docker stack
+├── start.sh                      Generates local secrets and starts the stack
+├── stop.sh                       One-command shutdown
+├── TESTING.md                    Testing guide
+├── PRESENTATION.md               Teacher/presentation explanation guide
 ├── pom.xml
 └── README.md
 ```
@@ -107,9 +109,11 @@ From the project root:
 bash start.sh
 ```
 
-On the first run, `start.sh` creates a local `.env` file containing randomly generated PostgreSQL, ActiveMQ Artemis, JWT and demo-account passwords. The file is ignored by Git and is never committed. The script then builds and starts PostgreSQL, ActiveMQ Artemis, Spring Boot and the Angular/Nginx frontend and waits until the application is reachable.
+On the first run, `start.sh` creates a local `.env` file containing randomly generated PostgreSQL, ActiveMQ Artemis, JWT and demo-account passwords. The file is ignored by Git and must never be committed.
 
-When demo seeding is enabled, the script prints the local demo account credentials after startup. These values come from `.env`, not from repository source files.
+The script then builds and starts PostgreSQL, ActiveMQ Artemis, Spring Boot and the Angular/Nginx frontend and waits until the application is reachable.
+
+When demo seeding is enabled, the script prints the current local demo account credentials after startup. These values come from `.env`, not from repository source files. Old fixed demo passwords such as `Customer123` are intentionally no longer used.
 
 Open:
 
@@ -133,7 +137,7 @@ docker compose ps
 docker compose down
 ```
 
-Delete the PostgreSQL volume as well only when you intentionally want a fresh database:
+Delete the PostgreSQL volume only when you intentionally want a fresh database:
 
 ```bash
 docker compose down -v
@@ -147,7 +151,7 @@ docker compose down -v
 - Docker Desktop
 - Node.js 24
 - npm
-- `openssl` for automatic local-secret generation
+- `openssl`
 
 ### Infrastructure only
 
@@ -157,7 +161,7 @@ The safest setup is to run `bash start.sh` once so the ignored `.env` file is ge
 docker compose up -d postgres artemis
 ```
 
-Export the values from `.env` into your shell before starting Spring Boot directly:
+Export the values from `.env` before starting Spring Boot directly:
 
 ```bash
 set -a
@@ -190,7 +194,7 @@ http://localhost:4200
 
 ## Development accounts
 
-Demo accounts are enabled only when `APP_SEED_DATA=true`. The standard demo identities are:
+Demo accounts are enabled only when `APP_SEED_DATA=true`.
 
 | Role | Email | Password source |
 | --- | --- | --- |
@@ -199,9 +203,63 @@ Demo accounts are enabled only when `APP_SEED_DATA=true`. The standard demo iden
 | Chef | `chef1@restaurant.com` | `SEED_CHEF_PASSWORD` |
 | Customer | `customer1@restaurant.com` | `SEED_CUSTOMER_PASSWORD` |
 
-`bash start.sh` generates these password values into the ignored `.env` file on first run and prints them after the application is ready. When seeding is enabled, the demo accounts are refreshed to match the local environment values, so an existing development database remains synchronized with the current local demo credentials.
+`bash start.sh` generates these password values into the ignored `.env` file on first run and prints them after the application is ready. When seeding is enabled, the demo accounts are refreshed to match the current environment values, so an existing development database remains synchronized with the local credentials.
 
-Do not commit `.env` or replace these environment-backed values with real account passwords.
+To see the current customer password locally:
+
+```bash
+grep SEED_CUSTOMER_PASSWORD .env
+```
+
+Do not commit `.env` or replace environment-backed values with real account passwords.
+
+## Security and secret handling
+
+The project was hardened after secret-scanning alerts identified old development credentials in repository history.
+
+Current source-control rules:
+
+- No committed database password is required by the application.
+- No committed ActiveMQ Artemis password is required by the application.
+- No committed JWT signing secret is used.
+- Demo-account passwords are supplied through environment variables.
+- `.env` and `.env.*` are ignored by Git; `.env.example` is safe to commit.
+- `start.sh` generates random local development secrets with `openssl`.
+- GitHub Actions generates or derives per-run test credentials instead of storing reusable demo passwords in the workflow.
+- Historical secret-scanner alerts may still reference old commits even though the current files have been cleaned.
+
+The current `application.properties` uses environment-backed values, and `APP_SEED_DATA` is disabled by default unless explicitly enabled.
+
+### Trivy security scan
+
+Install Trivy on macOS:
+
+```bash
+brew install trivy
+```
+
+Run a high/critical filesystem scan from the repository root:
+
+```bash
+trivy fs \
+  --scanners vuln,secret,misconfig \
+  --severity HIGH,CRITICAL \
+  .
+```
+
+This checks:
+
+- Maven and npm dependencies for known vulnerabilities
+- repository content for potential secrets
+- Dockerfiles and configuration for security misconfigurations
+
+You can also scan configuration only:
+
+```bash
+trivy config .
+```
+
+A clean final submission should ideally have no unresolved `CRITICAL` findings and should review/fix any `HIGH` findings before claiming a clean security scan. Do not treat an old Git-history development credential as an active production credential without checking whether it is still used.
 
 ## Customer registration
 
@@ -302,7 +360,7 @@ Authorization: Bearer <JWT>
 
 When an order is created or its status changes, Spring Boot publishes an `OrderMessage` through ActiveMQ Artemis. The kitchen listener consumes the message and logs the order event.
 
-The Artemis password is provided by the local `ARTEMIS_PASSWORD` environment value. `bash start.sh` generates it into `.env` instead of storing it in Git.
+The Artemis password is supplied from the local environment. It is not stored as a reusable project password in source control.
 
 ## Configuration
 
@@ -317,48 +375,32 @@ The Artemis password is provided by the local `ARTEMIS_PASSWORD` environment val
 | `JWT_ISSUER` | `restaurant-ordering-system` |
 | `JWT_SECRET` | environment required for the Docker stack |
 | `JWT_EXPIRATION_MINUTES` | `60` |
-| `APP_SEED_DATA` | `false` unless explicitly enabled; `start.sh` sets it to `true` in local `.env` |
+| `APP_SEED_DATA` | `false` unless explicitly enabled; `start.sh` enables it in local `.env` |
 | `SEED_ADMIN_PASSWORD` | required when demo seeding is enabled |
 | `SEED_WAITER_PASSWORD` | required when demo seeding is enabled |
 | `SEED_CUSTOMER_PASSWORD` | required when demo seeding is enabled |
 | `SEED_CHEF_PASSWORD` | required when demo seeding is enabled |
 
-The raw application configuration does not contain committed passwords or a committed JWT signing key. For the one-command local environment, `start.sh` creates randomly generated values in the Git-ignored `.env` file.
-
-## Generate API Documentation
+## Generate API documentation
 
 The source code is documented in the same style used for API documentation in the course:
 
 - Backend Java classes use **JavaDoc** comments (`/** ... */`).
-- Public methods document their purpose and, when applicable, `@param`, `@return` and `@throws` values.
+- Public methods document purpose and, when applicable, `@param`, `@return` and `@throws` values.
 - Backend test classes and test methods also contain documentation describing the behavior being verified.
 - Angular TypeScript classes and methods use **TSDoc/JSDoc-style** documentation comments.
 
-### Generate JavaDoc HTML
-
-From the project root run:
+Generate JavaDoc HTML:
 
 ```bash
 ./mvnw javadoc:javadoc
 ```
 
-The generated documentation can then be opened from:
-
-```text
-target/reports/apidocs/index.html
-```
-
-On macOS you can open it directly with:
+Open on macOS:
 
 ```bash
 open target/reports/apidocs/index.html
 ```
-
-The generated site contains browsable documentation for the backend packages, classes, interfaces and public methods.
-
-### Angular documentation
-
-Angular documentation is kept directly beside the TypeScript code using documentation comments. This makes component, service, guard, interceptor and model behavior visible in IntelliJ/VS Code tooltips and while reading the source.
 
 ## Tests
 
@@ -379,7 +421,12 @@ cd frontend
 npm test -- --watch=false
 ```
 
-Frontend tests cover core cart behavior, authentication/JWT behavior and API services.
+### Frontend dependency audit
+
+```bash
+cd frontend
+npm audit
+```
 
 ### Production frontend build
 
@@ -396,19 +443,17 @@ GitHub Actions runs on pull requests and pushes to `master`. The pipeline execut
 2. JavaDoc generation and validation
 3. Frontend unit tests
 4. Angular production build
-5. End-to-end backend smoke test against PostgreSQL and ActiveMQ Artemis
+5. Backend smoke test against PostgreSQL and ActiveMQ Artemis
 
-The smoke-test job generates temporary JWT and demo-account credentials at runtime, starts the application, authenticates the seeded customer with the runtime-generated password and creates a real order through the REST API. No demo-user password is stored in the workflow source.
+The smoke-test job creates temporary credentials for the run, starts the backend, authenticates the seeded customer using the runtime-generated password and creates a real order through the REST API. Reusable demo-user passwords are not stored in the workflow source.
 
 ## Presentation / teacher guide
 
-A structured explanation of the architecture, course technologies, JWT flow, database model, JMS usage, XML exports, role permissions, demo sequence and common presentation questions is included in:
+A structured explanation of the architecture, course technologies, JWT flow, database model, JMS usage, XML exports, role permissions, secret handling, security verification, demo sequence and common presentation questions is included in:
 
 ```text
 PRESENTATION.md
 ```
-
-This is the recommended document to review before presenting the project.
 
 ## Docker images
 
@@ -424,4 +469,4 @@ Build the frontend image manually:
 docker build -t restaurant-frontend ./frontend
 ```
 
-The provided multi-stage Dockerfiles keep build tools out of the final runtime images. The backend runs as a non-root user and the frontend production build is served through Nginx.
+The backend image runs as a non-root user. Security scans should also be used to review the frontend runtime image and Docker configuration before a production deployment.
