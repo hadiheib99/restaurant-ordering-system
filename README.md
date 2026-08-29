@@ -22,6 +22,7 @@ A full-stack restaurant ordering application built with Spring Boot, Angular, Po
 - JavaDoc documentation for backend classes and public methods
 - TSDoc/JSDoc-style documentation for Angular classes and application methods
 - Environment-based secret handling with Git-ignored local credentials
+- Security hardening for dependency and Docker findings discovered by Trivy
 
 ## Role permissions
 
@@ -45,7 +46,7 @@ NEW -> PREPARING -> READY -> SERVED -> PAID
 ### Backend
 
 - Java 21
-- Spring Boot 4.1
+- Spring Boot 4.1.1
 - Spring MVC
 - Spring Data JPA / Hibernate
 - Spring Security
@@ -64,7 +65,7 @@ NEW -> PREPARING -> READY -> SERVED -> PAID
 - Angular Router
 - Angular HTTP client/interceptor
 - Vitest / Angular testing utilities
-- Nginx for the production Docker image
+- Nginx unprivileged image for the production Docker runtime
 
 ### Course technologies demonstrated
 
@@ -122,6 +123,8 @@ Frontend: http://localhost:4200
 Backend:  http://localhost:8080
 Artemis:  http://localhost:8161
 ```
+
+The frontend container listens internally on port `8080` using an unprivileged Nginx image; Docker Compose maps it to `localhost:4200` for the browser.
 
 Stop the complete project with:
 
@@ -230,7 +233,15 @@ Current source-control rules:
 
 The current `application.properties` uses environment-backed values, and `APP_SEED_DATA` is disabled by default unless explicitly enabled.
 
-### Trivy security scan
+### Trivy security hardening
+
+A local Trivy scan identified five `HIGH` Maven dependency findings and one `HIGH` frontend Docker misconfiguration. The corresponding fixes were merged in PR #18:
+
+- Spring Boot was upgraded from `4.1.0` to `4.1.1`, updating the affected managed dependencies.
+- The frontend runtime image was changed from the root Nginx image to `nginxinc/nginx-unprivileged:alpine`.
+- The frontend Nginx listener changed from port `80` to `8080`.
+- Docker Compose now maps `4200:8080`, so the browser URL remains `http://localhost:4200`.
+- The normal project CI passed after these changes.
 
 Install Trivy on macOS:
 
@@ -247,19 +258,13 @@ trivy fs \
   .
 ```
 
-This checks:
-
-- Maven and npm dependencies for known vulnerabilities
-- repository content for potential secrets
-- Dockerfiles and configuration for security misconfigurations
-
 You can also scan configuration only:
 
 ```bash
 trivy config .
 ```
 
-A clean final submission should ideally have no unresolved `CRITICAL` findings and should review/fix any `HIGH` findings before claiming a clean security scan. Do not treat an old Git-history development credential as an active production credential without checking whether it is still used.
+Always use the output of the latest scan as the source of truth. Do not claim `0 HIGH / 0 CRITICAL` unless the command has been rerun after the latest dependency and Docker changes and actually reports that result.
 
 ## Customer registration
 
@@ -447,6 +452,8 @@ GitHub Actions runs on pull requests and pushes to `master`. The pipeline execut
 
 The smoke-test job creates temporary credentials for the run, starts the backend, authenticates the seeded customer using the runtime-generated password and creates a real order through the REST API. Reusable demo-user passwords are not stored in the workflow source.
 
+The CI run for the Trivy-remediation change passed successfully before merge.
+
 ## Presentation / teacher guide
 
 A structured explanation of the architecture, course technologies, JWT flow, database model, JMS usage, XML exports, role permissions, secret handling, security verification, demo sequence and common presentation questions is included in:
@@ -469,4 +476,4 @@ Build the frontend image manually:
 docker build -t restaurant-frontend ./frontend
 ```
 
-The backend image runs as a non-root user. Security scans should also be used to review the frontend runtime image and Docker configuration before a production deployment.
+Both runtime sides are now configured around non-root execution practices: the backend already runs as a non-root user, and the frontend uses the Nginx unprivileged runtime image on port `8080`.
