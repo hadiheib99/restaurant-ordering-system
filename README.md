@@ -99,7 +99,7 @@ restaurant-ordering-system/
 
 ## Quick start — one command
 
-Requirements: Docker Desktop with Docker Compose.
+Requirements: Docker Desktop with Docker Compose and `openssl`.
 
 From the project root:
 
@@ -107,7 +107,9 @@ From the project root:
 bash start.sh
 ```
 
-The script builds and starts PostgreSQL, ActiveMQ Artemis, Spring Boot and the Angular/Nginx frontend, then waits until the application is reachable.
+On the first run, `start.sh` creates a local `.env` file containing randomly generated PostgreSQL, ActiveMQ Artemis, JWT and demo-account passwords. The file is ignored by Git and is never committed. The script then builds and starts PostgreSQL, ActiveMQ Artemis, Spring Boot and the Angular/Nginx frontend and waits until the application is reachable.
+
+When demo seeding is enabled, the script prints the local demo account credentials after startup. These values come from `.env`, not from repository source files.
 
 Open:
 
@@ -123,7 +125,7 @@ Stop the complete project with:
 bash stop.sh
 ```
 
-You can also use Docker Compose directly:
+You can also use Docker Compose directly after a valid `.env` file exists:
 
 ```bash
 docker compose up --build -d
@@ -145,18 +147,22 @@ docker compose down -v
 - Docker Desktop
 - Node.js 24
 - npm
+- `openssl` for automatic local-secret generation
 
 ### Infrastructure only
 
-If you want to run Spring Boot and Angular directly from your machine, start only PostgreSQL and Artemis:
+The safest setup is to run `bash start.sh` once so the ignored `.env` file is generated. After that, if you want to run Spring Boot and Angular directly from your machine, start only PostgreSQL and Artemis:
 
 ```bash
 docker compose up -d postgres artemis
 ```
 
-### Backend
+Export the values from `.env` into your shell before starting Spring Boot directly:
 
 ```bash
+set -a
+source .env
+set +a
 ./mvnw spring-boot:run
 ```
 
@@ -184,16 +190,18 @@ http://localhost:4200
 
 ## Development accounts
 
-When `APP_SEED_DATA=true` (default), missing development users are created automatically.
+Demo accounts are enabled only when `APP_SEED_DATA=true`. The standard demo identities are:
 
-| Role | Email | Password |
+| Role | Email | Password source |
 | --- | --- | --- |
-| Admin | `admin@restaurant.com` | `Admin123` |
-| Waiter | `waiter1@restaurant.com` | `Waiter123` |
-| Chef | `chef1@restaurant.com` | `Chef123` |
-| Customer | `customer1@restaurant.com` | `Customer123` |
+| Admin | `admin@restaurant.com` | `SEED_ADMIN_PASSWORD` |
+| Waiter | `waiter1@restaurant.com` | `SEED_WAITER_PASSWORD` |
+| Chef | `chef1@restaurant.com` | `SEED_CHEF_PASSWORD` |
+| Customer | `customer1@restaurant.com` | `SEED_CUSTOMER_PASSWORD` |
 
-Existing users are never overwritten. If an account already exists in your local database, its existing password remains unchanged.
+`bash start.sh` generates these password values into the ignored `.env` file on first run and prints them after the application is ready. When seeding is enabled, the demo accounts are refreshed to match the local environment values, so an existing development database remains synchronized with the current local demo credentials.
+
+Do not commit `.env` or replace these environment-backed values with real account passwords.
 
 ## Customer registration
 
@@ -294,28 +302,28 @@ Authorization: Bearer <JWT>
 
 When an order is created or its status changes, Spring Boot publishes an `OrderMessage` through ActiveMQ Artemis. The kitchen listener consumes the message and logs the order event.
 
-Default Artemis development credentials:
-
-```text
-admin / admin
-```
+The Artemis password is provided by the local `ARTEMIS_PASSWORD` environment value. `bash start.sh` generates it into `.env` instead of storing it in Git.
 
 ## Configuration
 
-| Variable | Default |
+| Variable | Default / source |
 | --- | --- |
 | `DB_URL` | `jdbc:postgresql://localhost:5432/restaurant_db` |
 | `DB_USERNAME` | `postgres` |
-| `DB_PASSWORD` | `postgres` |
+| `DB_PASSWORD` | environment required for the Docker stack |
 | `ARTEMIS_BROKER_URL` | `tcp://localhost:61616` |
 | `ARTEMIS_USER` | `admin` |
-| `ARTEMIS_PASSWORD` | `admin` |
+| `ARTEMIS_PASSWORD` | environment required for the Docker stack |
 | `JWT_ISSUER` | `restaurant-ordering-system` |
-| `JWT_SECRET` | development secret |
+| `JWT_SECRET` | environment required for the Docker stack |
 | `JWT_EXPIRATION_MINUTES` | `60` |
-| `APP_SEED_DATA` | `true` |
+| `APP_SEED_DATA` | `false` unless explicitly enabled; `start.sh` sets it to `true` in local `.env` |
+| `SEED_ADMIN_PASSWORD` | required when demo seeding is enabled |
+| `SEED_WAITER_PASSWORD` | required when demo seeding is enabled |
+| `SEED_CUSTOMER_PASSWORD` | required when demo seeding is enabled |
+| `SEED_CHEF_PASSWORD` | required when demo seeding is enabled |
 
-Use a strong unique `JWT_SECRET` and non-development credentials for deployment.
+The raw application configuration does not contain committed passwords or a committed JWT signing key. For the one-command local environment, `start.sh` creates randomly generated values in the Git-ignored `.env` file.
 
 ## Generate API Documentation
 
@@ -390,7 +398,7 @@ GitHub Actions runs on pull requests and pushes to `master`. The pipeline execut
 4. Angular production build
 5. End-to-end backend smoke test against PostgreSQL and ActiveMQ Artemis
 
-The smoke test starts the application, authenticates a seeded customer and creates a real order through the REST API.
+The smoke-test job generates temporary JWT and demo-account credentials at runtime, starts the application, authenticates the seeded customer with the runtime-generated password and creates a real order through the REST API. No demo-user password is stored in the workflow source.
 
 ## Presentation / teacher guide
 

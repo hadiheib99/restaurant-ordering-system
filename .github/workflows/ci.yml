@@ -62,7 +62,7 @@ jobs:
         env:
           POSTGRES_DB: restaurant_db
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: ci-postgres
         ports:
           - 5432:5432
         options: >-
@@ -75,7 +75,7 @@ jobs:
         image: apache/activemq-artemis:latest-alpine
         env:
           ARTEMIS_USER: admin
-          ARTEMIS_PASSWORD: admin
+          ARTEMIS_PASSWORD: ci-artemis
         ports:
           - 61616:61616
           - 8161:8161
@@ -90,6 +90,17 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+
+      - name: Generate ephemeral test secrets
+        run: |
+          echo "DB_PASSWORD=ci-postgres" >> "$GITHUB_ENV"
+          echo "ARTEMIS_PASSWORD=ci-artemis" >> "$GITHUB_ENV"
+          echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "APP_SEED_DATA=true" >> "$GITHUB_ENV"
+          echo "SEED_ADMIN_PASSWORD=$(openssl rand -hex 12)" >> "$GITHUB_ENV"
+          echo "SEED_WAITER_PASSWORD=$(openssl rand -hex 12)" >> "$GITHUB_ENV"
+          echo "SEED_CUSTOMER_PASSWORD=$(openssl rand -hex 12)" >> "$GITHUB_ENV"
+          echo "SEED_CHEF_PASSWORD=$(openssl rand -hex 12)" >> "$GITHUB_ENV"
 
       - name: Start backend
         run: |
@@ -109,10 +120,15 @@ jobs:
 
       - name: Authenticate seeded customer
         run: |
+          payload=$(jq -nc \
+            --arg email "customer1@restaurant.com" \
+            --arg password "$SEED_CUSTOMER_PASSWORD" \
+            '{email:$email,password:$password}')
+
           for i in {1..20}; do
             status=$(curl -sS -o /tmp/login.json -w "%{http_code}" \
               -H "Content-Type: application/json" \
-              -d '{"email":"customer1@restaurant.com","password":"Customer123"}' \
+              -d "$payload" \
               http://localhost:8080/api/auth/login)
 
             if [ "$status" = "200" ]; then

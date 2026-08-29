@@ -8,6 +8,7 @@ import com.restaurant.ordering.repository.CategoryRepository;
 import com.restaurant.ordering.repository.MealRepository;
 import com.restaurant.ordering.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -20,15 +21,17 @@ import java.math.BigDecimal;
 /**
  * Seeds development/demo data when {@code app.seed-data} is enabled.
  *
- * <p>The initializer creates missing demonstration accounts, menu categories and
- * meals without overwriting existing users.</p>
+ * <p>Demo-account passwords are supplied through environment-backed application
+ * properties instead of being committed to source control. When seeding is
+ * enabled, the initializer creates or refreshes the demo accounts so the local
+ * credentials stored outside Git remain synchronized with the database.</p>
  *
  * @author Abdulhadi Heib
  * @version 1.0
  */
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "app.seed-data", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "app.seed-data", havingValue = "true")
 public class DevDataInitializer implements ApplicationRunner {
 
     private final UserRepository userRepository;
@@ -36,33 +39,55 @@ public class DevDataInitializer implements ApplicationRunner {
     private final MealRepository mealRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${app.seed.admin-password:}")
+    private String adminPassword;
+
+    @Value("${app.seed.waiter-password:}")
+    private String waiterPassword;
+
+    @Value("${app.seed.customer-password:}")
+    private String customerPassword;
+
+    @Value("${app.seed.chef-password:}")
+    private String chefPassword;
+
     /**
      * Executes all development-data initialization inside one transaction.
+     *
      * @param args Spring Boot application arguments
      */
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
+        validateSeedPasswords();
         seedUsers();
         seedMenu();
     }
 
-    /** Creates the default admin, waiter, customer and chef accounts when missing. */
+    /** Creates or refreshes the default admin, waiter, customer and chef accounts. */
     private void seedUsers() {
-        createUserIfMissing("admin", "Admin123", "Restaurant", "Manager", "admin@restaurant.com", "0501234567", Role.ADMIN);
-        createUserIfMissing("waiter1", "Waiter123", "Daniel", "Cohen", "waiter1@restaurant.com", "0502222222", Role.WAITER);
-        createUserIfMissing("customer1", "Customer123", "John", "Smith", "customer1@restaurant.com", "0501111111", Role.CUSTOMER);
-        createUserIfMissing("chef1", "Chef123", "Kitchen", "Chef", "chef1@restaurant.com", "0503333333", Role.CHEF);
+        upsertDemoUser("admin", adminPassword, "Restaurant", "Manager", "admin@restaurant.com", "0501234567", Role.ADMIN);
+        upsertDemoUser("waiter1", waiterPassword, "Daniel", "Cohen", "waiter1@restaurant.com", "0502222222", Role.WAITER);
+        upsertDemoUser("customer1", customerPassword, "John", "Smith", "customer1@restaurant.com", "0501111111", Role.CUSTOMER);
+        upsertDemoUser("chef1", chefPassword, "Kitchen", "Chef", "chef1@restaurant.com", "0503333333", Role.CHEF);
     }
 
     /**
-     * Creates one demonstration user only when both username and email are unused.
+     * Creates or refreshes one demonstration user with a password supplied outside Git.
+     *
+     * @param username demo username
+     * @param password environment-backed demo password
+     * @param firstName first name
+     * @param lastName last name
+     * @param email demo email address
+     * @param phone demo phone number
+     * @param role application role
      */
-    private void createUserIfMissing(String username, String password, String firstName, String lastName,
-                                     String email, String phone, Role role) {
-        if (userRepository.existsByEmailIgnoreCase(email) || userRepository.existsByUsernameIgnoreCase(username)) return;
+    private void upsertDemoUser(String username, String password, String firstName, String lastName,
+                                String email, String phone, Role role) {
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseGet(() -> userRepository.findByUsernameIgnoreCase(username).orElseGet(User::new));
 
-        User user = new User();
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(password));
         user.setFirstName(firstName);
@@ -72,6 +97,28 @@ public class DevDataInitializer implements ApplicationRunner {
         user.setRole(role);
         user.setEnabled(true);
         userRepository.save(user);
+    }
+
+    /** Ensures that every seeded account has a password supplied by the environment. */
+    private void validateSeedPasswords() {
+        requireSeedPassword("SEED_ADMIN_PASSWORD", adminPassword);
+        requireSeedPassword("SEED_WAITER_PASSWORD", waiterPassword);
+        requireSeedPassword("SEED_CUSTOMER_PASSWORD", customerPassword);
+        requireSeedPassword("SEED_CHEF_PASSWORD", chefPassword);
+    }
+
+    /**
+     * Rejects demo-data startup when a required password is absent.
+     *
+     * @param environmentVariable environment variable that must be supplied
+     * @param password resolved password value
+     */
+    private static void requireSeedPassword(String environmentVariable, String password) {
+        if (password == null || password.isBlank()) {
+            throw new IllegalStateException(
+                    environmentVariable + " must be set when APP_SEED_DATA=true"
+            );
+        }
     }
 
     /** Creates or refreshes the demonstration categories and meals. */
