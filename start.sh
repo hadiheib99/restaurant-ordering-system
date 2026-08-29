@@ -54,6 +54,32 @@ if [[ "${APP_SEED_DATA:-false}" == "true" ]]; then
 fi
 
 printf '\n🍽️  Starting Restaurant Ordering System...\n'
+printf '   Starting PostgreSQL and ActiveMQ Artemis first...\n'
+
+docker compose up -d postgres artemis
+
+printf '\n⏳ Waiting for PostgreSQL...\n'
+for i in {1..30}; do
+  if docker exec restaurant-db pg_isready -U postgres -d restaurant_db >/dev/null 2>&1; then
+    break
+  fi
+  if [[ "$i" -eq 30 ]]; then
+    printf '\n❌ PostgreSQL did not become ready.\n'
+    docker compose logs --tail=100 postgres
+    exit 1
+  fi
+  sleep 2
+done
+
+# Keep an existing local PostgreSQL volume compatible with a newly generated .env.
+# The official image allows local socket administration from inside the container,
+# so this safely rotates the postgres role to the current ignored .env value.
+docker exec -i restaurant-db \
+  psql -U postgres -d postgres --set=postgres_password="$POSTGRES_PASSWORD" >/dev/null <<'SQL'
+ALTER ROLE postgres WITH PASSWORD :'postgres_password';
+SQL
+
+printf '   Local PostgreSQL credential synchronized with .env.\n'
 
 docker compose up --build -d
 
