@@ -62,7 +62,7 @@ jobs:
         env:
           POSTGRES_DB: restaurant_db
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ci-postgres
+          POSTGRES_PASSWORD: "ci-pg-${{ github.run_id }}-${{ github.run_attempt }}"
         ports:
           - 5432:5432
         options: >-
@@ -75,7 +75,7 @@ jobs:
         image: apache/activemq-artemis:latest-alpine
         env:
           ARTEMIS_USER: admin
-          ARTEMIS_PASSWORD: ci-artemis
+          ARTEMIS_PASSWORD: "ci-mq-${{ github.run_id }}-${{ github.run_attempt }}"
         ports:
           - 61616:61616
           - 8161:8161
@@ -93,8 +93,8 @@ jobs:
 
       - name: Generate ephemeral test secrets
         run: |
-          echo "DB_PASSWORD=ci-postgres" >> "$GITHUB_ENV"
-          echo "ARTEMIS_PASSWORD=ci-artemis" >> "$GITHUB_ENV"
+          echo "DB_PASSWORD=ci-pg-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_ENV"
+          echo "ARTEMIS_PASSWORD=ci-mq-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_ENV"
           echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
           echo "APP_SEED_DATA=true" >> "$GITHUB_ENV"
           echo "SEED_ADMIN_PASSWORD=$(openssl rand -hex 12)" >> "$GITHUB_ENV"
