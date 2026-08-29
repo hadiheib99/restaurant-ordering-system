@@ -4,7 +4,7 @@ Use this guide to explain the Restaurant Ordering System clearly in a university
 
 ## 1. One-minute introduction
 
-> My project is a full-stack Restaurant Ordering System. The backend is built with Spring Boot and Java, the frontend is Angular, PostgreSQL stores the data, and ActiveMQ Artemis is used for asynchronous order events. The system supports four roles: customer, chef, waiter and admin. Each role has different permissions, and JWT authentication protects the API. The project demonstrates REST Web Services, JPA/Hibernate and JMS from the course, and it also exports receipts and reports as XML. I also added automated tests, CI, Docker and environment-based secret handling so reusable passwords and JWT signing secrets are not committed to the repository.
+> My project is a full-stack Restaurant Ordering System. The backend is built with Spring Boot 4.1.1 and Java, the frontend is Angular, PostgreSQL stores the data, and ActiveMQ Artemis is used for asynchronous order events. The system supports four roles: customer, chef, waiter and admin. Each role has different permissions, and JWT authentication protects the API. The project demonstrates REST Web Services, JPA/Hibernate and JMS from the course, and it also exports receipts and reports as XML. I also added automated tests, CI, Docker and environment-based secret handling so reusable passwords and JWT signing secrets are not committed to the repository.
 
 ## 2. The problem the system solves
 
@@ -252,9 +252,9 @@ A useful detail to explain is that `OrderItem` stores the unit price at the time
 
 The project no longer stores reusable demo passwords or a reusable JWT signing key in the current repository source.
 
-### What changed
+### Secret handling changes
 
-- `application.properties` now reads sensitive values from environment variables.
+- `application.properties` reads sensitive values from environment variables.
 - `.env` is ignored by Git.
 - `.env.example` is a safe template and contains no real credentials.
 - `start.sh` generates random local PostgreSQL, Artemis, JWT and demo-account passwords with `openssl` when `.env` does not exist.
@@ -287,15 +287,17 @@ Do not put the generated value in a slide, README or Git commit.
 
 ### GitGuardian historical alerts
 
-A secret-scanning tool can continue to show an alert marked as coming from a historical commit even after the current source is cleaned. Explain the distinction:
+A secret-scanning tool can continue to show an alert marked as coming from a historical commit even after the current source is cleaned.
+
+A good explanation is:
 
 > The scanner found an old development credential in Git history. The current application no longer uses that hardcoded value. Current secrets are generated locally or at CI runtime and are kept out of source control.
 
 Do not claim that a historical credential is harmless unless you have confirmed it was only a development/test credential and was never used for a real external service.
 
-## 10. Security scanning with Trivy
+## 10. Trivy security scan and fixes
 
-Trivy can scan dependencies, potential secrets and configuration problems.
+Trivy was used to scan dependencies, potential secrets and Docker/configuration problems.
 
 Install on macOS:
 
@@ -312,30 +314,36 @@ trivy fs \
   .
 ```
 
-This checks:
-
-- Maven dependencies
-- npm dependencies
-- potential secrets
-- Dockerfile/configuration misconfigurations
-
-You can also run:
-
-```bash
-trivy config .
-```
-
-### Latest local scan result to remember
-
-The latest local scan performed during final preparation reported:
+The first final-preparation scan reported:
 
 - frontend `package-lock.json`: `0` HIGH/CRITICAL vulnerabilities
 - no `CRITICAL` findings
 - no current secret finding shown in the report summary
 - `5 HIGH` Maven dependency findings in `pom.xml`
-- `1 HIGH` Docker misconfiguration in `frontend/Dockerfile` for running the final Nginx container without an explicit non-root `USER`
+- `1 HIGH` frontend Docker misconfiguration because the Nginx runtime was running without an explicit non-root setup
 
-These findings should be treated as follow-up work until they are fixed and the scan is rerun. Do **not** tell the instructor that Trivy is completely clean unless a new scan actually shows that result.
+Those findings were then addressed in PR #18:
+
+- Spring Boot `4.1.0 -> 4.1.1`, which updates the affected managed dependencies
+- frontend runtime changed to `nginxinc/nginx-unprivileged:alpine`
+- frontend internal port changed from `80` to `8080`
+- Docker Compose mapping changed from `4200:80` to `4200:8080`
+- the normal GitHub CI passed after the remediation change
+
+Important files to show:
+
+```text
+pom.xml
+frontend/Dockerfile
+frontend/nginx.conf
+compose.yaml
+```
+
+The correct thing to say in the presentation is:
+
+> I scanned the project with Trivy, fixed the high-severity dependency and frontend-container findings, and rerun the normal CI successfully. I use the latest Trivy output as the source of truth for the final security status.
+
+Do not say `0 HIGH / 0 CRITICAL` unless you have actually rerun Trivy after pulling the latest `master` and the output shows that result.
 
 ## 11. Recommended live demo
 
@@ -376,6 +384,8 @@ The backend tests include order role/workflow rules and XML-specific tests:
 - customer can export own XML receipt
 - admin can export XML report
 - non-admin cannot export XML report
+
+The Trivy-remediation branch also completed the normal GitHub CI successfully before it was merged.
 
 For exact commands, see `TESTING.md`.
 
@@ -420,7 +430,14 @@ bash stop.sh
 
 Explain that Docker makes the environment reproducible for another developer or the instructor.
 
-Also explain that security scanning is useful for Dockerfiles and images. The backend image is configured to run as a non-root user. The latest Trivy scan still flagged the frontend Nginx runtime image because it does not yet declare a non-root user.
+Security-related Docker point:
+
+- the backend runtime already uses non-root execution
+- the frontend now uses `nginxinc/nginx-unprivileged:alpine`
+- Nginx listens internally on `8080`
+- Compose maps `localhost:4200` to container port `8080`
+
+So the external browser URL did not change even though the container was hardened.
 
 ## 15. Final verification before presentation
 
@@ -449,7 +466,7 @@ bash stop.sh
 bash start.sh
 ```
 
-Expected functional result from the last verified test/build run:
+Expected functional result from the last verified test/build flow:
 
 - 32 backend tests pass
 - JavaDoc finishes with `BUILD SUCCESS`
@@ -459,7 +476,7 @@ Expected functional result from the last verified test/build run:
 - the Dockerized application starts successfully
 - GitHub CI is green
 
-For the security scan, read the actual current Trivy output rather than memorizing an old number. Fix or explicitly acknowledge any remaining `HIGH`/`CRITICAL` findings.
+For the final security result, read the actual current Trivy output after pulling `master`. The code changes for the earlier Trivy findings are already merged, but the latest local rerun should be used before claiming a specific final count.
 
 A non-failing Angular stylesheet budget warning does not prevent the production build from succeeding.
 
@@ -511,7 +528,11 @@ A non-failing Angular stylesheet budget warning does not prevent the production 
 
 ### Did you perform a security scan?
 
-> Yes. I used dependency/secret/misconfiguration scanning with Trivy and npm audit. I use the scan results as a checklist and do not claim a clean result until all relevant high/critical findings are reviewed or fixed.
+> Yes. I used Trivy to scan dependencies, secrets and Docker/configuration. It found high-severity Maven and frontend-container findings. I updated Spring Boot and changed the frontend to an unprivileged Nginx runtime, then verified the normal CI still passed.
+
+### Why did you change the frontend container port to 8080?
+
+> The unprivileged Nginx image should not bind to privileged port 80 as root. It listens on 8080 inside the container, while Docker Compose still exposes the site as `localhost:4200`.
 
 ### What would you add in a production version?
 
@@ -519,4 +540,4 @@ Possible extensions include password reset/email verification, payment-provider 
 
 ## 17. Strong closing sentence
 
-> The project demonstrates a complete multi-role restaurant workflow across an Angular frontend, secured Spring Boot REST backend, JPA/Hibernate relational persistence, JMS asynchronous messaging and XML exports, with automated tests, CI, generated JavaDoc, Dockerized deployment and environment-based secret handling.
+> The project demonstrates a complete multi-role restaurant workflow across an Angular frontend, secured Spring Boot REST backend, JPA/Hibernate relational persistence, JMS asynchronous messaging and XML exports, with automated tests, CI, generated JavaDoc, Dockerized deployment, environment-based secret handling and security hardening based on automated scan results.
