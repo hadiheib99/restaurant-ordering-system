@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: restaurant_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD or run bash start.sh}"
     ports:
       - "5432:5432"
     volumes:
@@ -22,7 +22,7 @@ services:
     container_name: restaurant-artemis
     environment:
       ARTEMIS_USER: admin
-      ARTEMIS_PASSWORD: admin
+      ARTEMIS_PASSWORD: "${ARTEMIS_PASSWORD:?Set ARTEMIS_PASSWORD or run bash start.sh}"
     ports:
       - "61616:61616"
       - "8161:8161"
@@ -36,11 +36,16 @@ services:
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/restaurant_db
       DB_USERNAME: postgres
-      DB_PASSWORD: postgres
+      DB_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD or run bash start.sh}"
       ARTEMIS_BROKER_URL: tcp://artemis:61616
       ARTEMIS_USER: admin
-      ARTEMIS_PASSWORD: admin
-      APP_SEED_DATA: "true"
+      ARTEMIS_PASSWORD: "${ARTEMIS_PASSWORD:?Set ARTEMIS_PASSWORD or run bash start.sh}"
+      JWT_SECRET: "${JWT_SECRET:?Set JWT_SECRET or run bash start.sh}"
+      APP_SEED_DATA: "${APP_SEED_DATA:-false}"
+      SEED_ADMIN_PASSWORD: "${SEED_ADMIN_PASSWORD:-}"
+      SEED_WAITER_PASSWORD: "${SEED_WAITER_PASSWORD:-}"
+      SEED_CUSTOMER_PASSWORD: "${SEED_CUSTOMER_PASSWORD:-}"
+      SEED_CHEF_PASSWORD: "${SEED_CHEF_PASSWORD:-}"
     ports:
       - "8080:8080"
     depends_on:
