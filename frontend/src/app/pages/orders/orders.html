@@ -7,7 +7,7 @@
 
     <div class="header-actions">
       @if (canExportReport) {
-        <button type="button" class="xml-button" (click)="viewReport()">View XML Report</button>
+        <button type="button" class="xml-button" (click)="viewReport()">View Report</button>
         <button type="button" class="xml-button" (click)="exportReport()">Download XML Report</button>
       }
       @if (role === 'CUSTOMER' || role === 'ADMIN') {
@@ -52,7 +52,7 @@
             <strong>Total: ₪{{ order.totalPrice }}</strong>
 
             <div class="order-actions">
-              <button type="button" class="receipt-button" (click)="viewReceipt(order)">View Receipt XML</button>
+              <button type="button" class="receipt-button" (click)="viewReceipt(order)">View Receipt</button>
               <button type="button" class="receipt-button" (click)="downloadReceipt(order)">Download XML</button>
 
               @if (nextAllowedStatus(order.status); as next) {
@@ -83,18 +83,84 @@
         (click)="$event.stopPropagation()">
         <div class="xml-dialog-header">
           <div>
-            <span class="xml-kicker">XML Reader</span>
+            <span class="xml-kicker">Document Reader</span>
             <h2>{{ xmlViewerTitle() }}</h2>
           </div>
-          <button type="button" class="xml-close" aria-label="Close XML viewer" (click)="closeXmlViewer()">×</button>
+          <button type="button" class="xml-close" aria-label="Close document viewer" (click)="closeXmlViewer()">×</button>
         </div>
 
         @if (xmlViewerLoading()) {
-          <p class="xml-state">Loading XML...</p>
+          <p class="xml-state">Loading document...</p>
         } @else if (xmlViewerError()) {
           <p class="error xml-state">{{ xmlViewerError() }}</p>
-        } @else {
-          <pre class="xml-content"><code>{{ xmlViewerContent() }}</code></pre>
+        } @else if (receiptView(); as receipt) {
+          <div class="document-body">
+            <div class="document-summary">
+              <div><span>Order</span><strong>#{{ receipt.orderId }}</strong></div>
+              <div><span>Status</span><strong>{{ receipt.status }}</strong></div>
+              <div><span>Customer</span><strong>{{ receipt.customer }}</strong></div>
+              <div><span>Date</span><strong>{{ receipt.createdAt }}</strong></div>
+            </div>
+
+            <h3>Items</h3>
+            <div class="reader-table-wrap">
+              <table class="reader-table">
+                <thead>
+                  <tr><th>Meal</th><th>Qty</th><th>Unit price</th><th>Subtotal</th></tr>
+                </thead>
+                <tbody>
+                  @for (item of receipt.items; track $index) {
+                    <tr>
+                      <td>{{ item.meal }}</td>
+                      <td>{{ item.quantity }}</td>
+                      <td>₪{{ item.unitPrice }}</td>
+                      <td>₪{{ item.subtotal }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div class="document-total">
+              <span>Total</span>
+              <strong>₪{{ receipt.totalPrice }}</strong>
+            </div>
+          </div>
+        } @else if (reportView(); as report) {
+          <div class="document-body">
+            <div class="report-hero">
+              <div><span>Total orders</span><strong>{{ report.totalOrders }}</strong></div>
+              <div><span>Paid revenue</span><strong>₪{{ report.paidRevenue }}</strong></div>
+              <div><span>Generated</span><strong>{{ report.generatedAt }}</strong></div>
+            </div>
+
+            <h3>Orders by status</h3>
+            <div class="status-grid">
+              @for (status of report.statuses; track status.name) {
+                <div class="status-card"><span>{{ status.name }}</span><strong>{{ status.count }}</strong></div>
+              }
+            </div>
+
+            <h3>Order list</h3>
+            <div class="reader-table-wrap">
+              <table class="reader-table">
+                <thead>
+                  <tr><th>Order</th><th>Customer</th><th>Status</th><th>Total</th><th>Created</th></tr>
+                </thead>
+                <tbody>
+                  @for (order of report.orders; track order.id) {
+                    <tr>
+                      <td>#{{ order.id }}</td>
+                      <td>{{ order.customer }}</td>
+                      <td>{{ order.status }}</td>
+                      <td>₪{{ order.totalPrice }}</td>
+                      <td>{{ order.createdAt }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
         }
       </section>
     </div>
