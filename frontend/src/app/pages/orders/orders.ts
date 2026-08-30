@@ -10,7 +10,7 @@ import { AuthService } from '../../core/services/auth';
  *
  * The component renders only actions appropriate to the current JWT role,
  * supports role-specific status transitions and cancellation rules, and provides
- * XML receipt/report downloads where authorized.
+ * XML receipt/report downloads and an in-app XML reader where authorized.
  */
 @Component({
   selector: 'app-orders',
@@ -28,6 +28,12 @@ export class Orders implements OnInit {
   readonly role = this.authService.getRole();
   readonly canDelete = this.role === 'ADMIN';
   readonly canExportReport = this.role === 'ADMIN';
+
+  readonly xmlViewerOpen = signal(false);
+  readonly xmlViewerLoading = signal(false);
+  readonly xmlViewerTitle = signal('XML Viewer');
+  readonly xmlViewerContent = signal('');
+  readonly xmlViewerError = signal('');
 
   /** Loads visible orders when Angular initializes the page. */
   ngOnInit(): void { this.loadOrders(); }
@@ -61,6 +67,33 @@ export class Orders implements OnInit {
   cancelOrder(order: Order): void {
     if (!this.canCancel(order) || !confirm(`Cancel order #${order.id}?`)) return;
     this.applyStatus(order, 'CANCELLED');
+  }
+
+  /** Opens an XML receipt inside the application without downloading it. */
+  viewReceipt(order: Order): void {
+    this.openXmlViewer(`Order #${order.id} Receipt`);
+    this.orderService.getReceiptXml(order.id).subscribe({
+      next: blob => this.showXmlBlob(blob),
+      error: error => this.handleXmlViewerError(error, 'Could not load the XML receipt.')
+    });
+  }
+
+  /** Opens the administrator XML report inside the application without downloading it. */
+  viewReport(): void {
+    if (!this.canExportReport) return;
+    this.openXmlViewer('Restaurant Orders XML Report');
+    this.orderService.getReportXml().subscribe({
+      next: blob => this.showXmlBlob(blob),
+      error: error => this.handleXmlViewerError(error, 'Could not load the XML report.')
+    });
+  }
+
+  /** Closes and clears the in-app XML reader. */
+  closeXmlViewer(): void {
+    this.xmlViewerOpen.set(false);
+    this.xmlViewerLoading.set(false);
+    this.xmlViewerContent.set('');
+    this.xmlViewerError.set('');
   }
 
   /** Downloads one order receipt as XML. */
@@ -132,6 +165,47 @@ export class Orders implements OnInit {
       case 'SERVED': return 'PAID';
       default: return null;
     }
+  }
+
+  /** Prepares the XML viewer while the requested document is loading. */
+  private openXmlViewer(title: string): void {
+    this.xmlViewerTitle.set(title);
+    this.xmlViewerContent.set('');
+    this.xmlViewerError.set('');
+    this.xmlViewerLoading.set(true);
+    this.xmlViewerOpen.set(true);
+  }
+
+  /** Converts an XML Blob to readable text and displays it in the viewer. */
+  private showXmlBlob(blob: Blob): void {
+    void blob.text()
+      .then(xml => {
+        this.xmlViewerContent.set(this.prettyXml(xml));
+        this.xmlViewerLoading.set(false);
+      })
+      .catch(error => this.handleXmlViewerError(error, 'Could not read the XML document.'));
+  }
+
+  /** Records an XML-reader error without leaving the page. */
+  private handleXmlViewerError(error: unknown, message: string): void {
+    console.error(error);
+    this.xmlViewerLoading.set(false);
+    this.xmlViewerError.set(message);
+  }
+
+  /** Formats compact XML with indentation for easier reading in the browser. */
+  private prettyXml(xml: string): string {
+    const normalized = xml.replace(/>\s*</g, '><').trim();
+    const tokens = normalized.replace(/(>)(<)(\/*)/g, '$1\n$2$3').split('\n');
+    let indent = 0;
+
+    return tokens.map(token => {
+      const trimmed = token.trim();
+      if (/^<\//.test(trimmed)) indent = Math.max(0, indent - 1);
+      const line = `${'  '.repeat(indent)}${trimmed}`;
+      if (/^<[^!?/][^>]*[^/]>/i.test(trimmed) && !/<\/[^>]+>$/.test(trimmed)) indent += 1;
+      return line;
+    }).join('\n');
   }
 
   /** Creates a temporary browser URL and triggers a file download. */
