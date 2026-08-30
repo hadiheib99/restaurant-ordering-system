@@ -7,7 +7,8 @@
 
     <div class="header-actions">
       @if (canExportReport) {
-        <button type="button" class="xml-button" (click)="exportReport()">Export XML Report</button>
+        <button type="button" class="xml-button" (click)="viewReport()">View XML Report</button>
+        <button type="button" class="xml-button" (click)="exportReport()">Download XML Report</button>
       }
       @if (role === 'CUSTOMER' || role === 'ADMIN') {
         <button type="button" (click)="goBack()">
@@ -51,7 +52,8 @@
             <strong>Total: ₪{{ order.totalPrice }}</strong>
 
             <div class="order-actions">
-              <button type="button" class="receipt-button" (click)="downloadReceipt(order)">Receipt XML</button>
+              <button type="button" class="receipt-button" (click)="viewReceipt(order)">View Receipt XML</button>
+              <button type="button" class="receipt-button" (click)="downloadReceipt(order)">Download XML</button>
 
               @if (nextAllowedStatus(order.status); as next) {
                 <button type="button" (click)="updateStatus(order, next)">Move to {{ next }}</button>
@@ -68,6 +70,33 @@
           </div>
         </article>
       }
+    </div>
+  }
+
+  @if (xmlViewerOpen()) {
+    <div class="xml-overlay" role="presentation" (click)="closeXmlViewer()">
+      <section
+        class="xml-dialog"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="xmlViewerTitle()"
+        (click)="$event.stopPropagation()">
+        <div class="xml-dialog-header">
+          <div>
+            <span class="xml-kicker">XML Reader</span>
+            <h2>{{ xmlViewerTitle() }}</h2>
+          </div>
+          <button type="button" class="xml-close" aria-label="Close XML viewer" (click)="closeXmlViewer()">×</button>
+        </div>
+
+        @if (xmlViewerLoading()) {
+          <p class="xml-state">Loading XML...</p>
+        } @else if (xmlViewerError()) {
+          <p class="error xml-state">{{ xmlViewerError() }}</p>
+        } @else {
+          <pre class="xml-content"><code>{{ xmlViewerContent() }}</code></pre>
+        }
+      </section>
     </div>
   }
 </main>
