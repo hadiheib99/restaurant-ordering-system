@@ -5,13 +5,44 @@ import { OrderService } from '../../core/services/order';
 import { Order } from '../../core/models/order';
 import { AuthService } from '../../core/services/auth';
 
-/**
- * Shared order-management page used by customers, chefs, waiters and admins.
- *
- * The component renders only actions appropriate to the current JWT role,
- * supports role-specific status transitions and cancellation rules, and provides
- * XML receipt/report downloads and an in-app XML reader where authorized.
- */
+interface ReceiptItemView {
+  meal: string;
+  quantity: string;
+  unitPrice: string;
+  subtotal: string;
+}
+
+interface ReceiptView {
+  orderId: string;
+  status: string;
+  customer: string;
+  createdAt: string;
+  totalPrice: string;
+  items: ReceiptItemView[];
+}
+
+interface ReportStatusView {
+  name: string;
+  count: string;
+}
+
+interface ReportOrderView {
+  id: string;
+  status: string;
+  customer: string;
+  totalPrice: string;
+  createdAt: string;
+}
+
+interface ReportView {
+  generatedAt: string;
+  totalOrders: string;
+  paidRevenue: string;
+  statuses: ReportStatusView[];
+  orders: ReportOrderView[];
+}
+
+/** Shared order-management page used by customers, chefs, waiters and admins. */
 @Component({
   selector: 'app-orders',
   templateUrl: './orders.html',
@@ -31,14 +62,13 @@ export class Orders implements OnInit {
 
   readonly xmlViewerOpen = signal(false);
   readonly xmlViewerLoading = signal(false);
-  readonly xmlViewerTitle = signal('XML Viewer');
-  readonly xmlViewerContent = signal('');
+  readonly xmlViewerTitle = signal('Document Viewer');
   readonly xmlViewerError = signal('');
+  readonly receiptView = signal<ReceiptView | null>(null);
+  readonly reportView = signal<ReportView | null>(null);
 
-  /** Loads visible orders when Angular initializes the page. */
   ngOnInit(): void { this.loadOrders(); }
 
-  /** Requests orders visible to the authenticated role. */
   loadOrders(): void {
     this.orderService.getOrders().subscribe({
       next: orders => { this.orders.set(orders); this.loading.set(false); },
@@ -46,57 +76,49 @@ export class Orders implements OnInit {
     });
   }
 
-  /**
-   * Applies a normal role-specific next-status transition.
-   * @param order order being updated
-   * @param status requested new status
-   */
   updateStatus(order: Order, status: string): void {
     const allowedStatus = this.nextAllowedStatus(order.status);
     if (allowedStatus !== status) return;
     this.applyStatus(order, status);
   }
 
-  /** @returns whether the current role may offer cancellation for the order's current state */
   canCancel(order: Order): boolean {
     const beforeReady = order.status === 'NEW' || order.status === 'PREPARING';
     return beforeReady && (this.role === 'CUSTOMER' || this.role === 'WAITER' || this.role === 'ADMIN');
   }
 
-  /** Confirms and requests a CANCELLED transition for an eligible order. */
   cancelOrder(order: Order): void {
     if (!this.canCancel(order) || !confirm(`Cancel order #${order.id}?`)) return;
     this.applyStatus(order, 'CANCELLED');
   }
 
-  /** Opens an XML receipt inside the application without downloading it. */
+  /** Loads receipt XML and converts it to a reader-friendly receipt view. */
   viewReceipt(order: Order): void {
-    this.openXmlViewer(`Order #${order.id} Receipt`);
+    this.openXmlViewer(`Receipt - Order #${order.id}`);
     this.orderService.getReceiptXml(order.id).subscribe({
-      next: blob => this.showXmlBlob(blob),
-      error: error => this.handleXmlViewerError(error, 'Could not load the XML receipt.')
+      next: blob => this.parseXmlBlob(blob, 'receipt'),
+      error: error => this.handleXmlViewerError(error, 'Could not load the receipt.')
     });
   }
 
-  /** Opens the administrator XML report inside the application without downloading it. */
+  /** Loads report XML and converts it to a reader-friendly report view. */
   viewReport(): void {
     if (!this.canExportReport) return;
-    this.openXmlViewer('Restaurant Orders XML Report');
+    this.openXmlViewer('Restaurant Orders Report');
     this.orderService.getReportXml().subscribe({
-      next: blob => this.showXmlBlob(blob),
-      error: error => this.handleXmlViewerError(error, 'Could not load the XML report.')
+      next: blob => this.parseXmlBlob(blob, 'report'),
+      error: error => this.handleXmlViewerError(error, 'Could not load the restaurant report.')
     });
   }
 
-  /** Closes and clears the in-app XML reader. */
   closeXmlViewer(): void {
     this.xmlViewerOpen.set(false);
     this.xmlViewerLoading.set(false);
-    this.xmlViewerContent.set('');
+    this.receiptView.set(null);
+    this.reportView.set(null);
     this.xmlViewerError.set('');
   }
 
-  /** Downloads one order receipt as XML. */
   downloadReceipt(order: Order): void {
     this.orderService.getReceiptXml(order.id).subscribe({
       next: blob => this.downloadBlob(blob, `order-${order.id}-receipt.xml`),
@@ -104,7 +126,6 @@ export class Orders implements OnInit {
     });
   }
 
-  /** Downloads the administrator-only restaurant report as XML. */
   exportReport(): void {
     if (!this.canExportReport) return;
     this.orderService.getReportXml().subscribe({
@@ -113,7 +134,6 @@ export class Orders implements OnInit {
     });
   }
 
-  /** Permanently deletes an order when the current user is an administrator. */
   deleteOrder(order: Order): void {
     if (!this.canDelete || !confirm(`Delete order #${order.id}?`)) return;
     this.orderService.deleteOrder(order.id).subscribe({
@@ -122,11 +142,6 @@ export class Orders implements OnInit {
     });
   }
 
-  /**
-   * Determines the next normal status offered by the UI for the current role.
-   * @param status current order status
-   * @returns next permitted status or null when no normal action is available
-   */
   nextAllowedStatus(status: string): string | null {
     if (this.role === 'ADMIN') return this.nextStatus(status);
     if (this.role === 'CHEF') {
@@ -142,7 +157,6 @@ export class Orders implements OnInit {
     return null;
   }
 
-  /** Sends a status request and replaces the matching order with the server response. */
   private applyStatus(order: Order, status: string): void {
     this.orderService.updateStatus(order.id, status).subscribe({
       next: updatedOrder => this.orders.update(orders =>
@@ -156,7 +170,6 @@ export class Orders implements OnInit {
     });
   }
 
-  /** Returns the next step in the complete administrator workflow. */
   private nextStatus(status: string): string | null {
     switch (status) {
       case 'NEW': return 'PREPARING';
@@ -167,48 +180,85 @@ export class Orders implements OnInit {
     }
   }
 
-  /** Prepares the XML viewer while the requested document is loading. */
   private openXmlViewer(title: string): void {
     this.xmlViewerTitle.set(title);
-    this.xmlViewerContent.set('');
+    this.receiptView.set(null);
+    this.reportView.set(null);
     this.xmlViewerError.set('');
     this.xmlViewerLoading.set(true);
     this.xmlViewerOpen.set(true);
   }
 
-  /** Converts an XML Blob to readable text and displays it in the viewer. */
-  private showXmlBlob(blob: Blob): void {
+  private parseXmlBlob(blob: Blob, expectedType: 'receipt' | 'report'): void {
     void blob.text()
       .then(xml => {
-        this.xmlViewerContent.set(this.prettyXml(xml));
+        const document = new DOMParser().parseFromString(xml, 'application/xml');
+        if (document.querySelector('parsererror')) throw new Error('Invalid XML document');
+
+        if (expectedType === 'receipt') this.receiptView.set(this.toReceiptView(document));
+        else this.reportView.set(this.toReportView(document));
+
         this.xmlViewerLoading.set(false);
       })
       .catch(error => this.handleXmlViewerError(error, 'Could not read the XML document.'));
   }
 
-  /** Records an XML-reader error without leaving the page. */
+  private toReceiptView(document: Document): ReceiptView {
+    const root = document.documentElement;
+    const items = Array.from(document.querySelectorAll('items > item')).map(item => ({
+      meal: this.elementText(item, 'meal'),
+      quantity: this.elementText(item, 'quantity'),
+      unitPrice: this.elementText(item, 'unitPrice'),
+      subtotal: this.elementText(item, 'subtotal')
+    }));
+
+    return {
+      orderId: root.getAttribute('orderId') ?? '-',
+      status: this.text(document, 'status'),
+      customer: this.text(document, 'customer'),
+      createdAt: this.text(document, 'createdAt'),
+      totalPrice: this.text(document, 'totalPrice'),
+      items
+    };
+  }
+
+  private toReportView(document: Document): ReportView {
+    const root = document.documentElement;
+    const statuses = Array.from(document.querySelectorAll('summary > status')).map(status => ({
+      name: status.getAttribute('name') ?? '-',
+      count: status.getAttribute('count') ?? '0'
+    }));
+    const orders = Array.from(document.querySelectorAll('orders > order')).map(order => ({
+      id: order.getAttribute('id') ?? '-',
+      status: order.getAttribute('status') ?? '-',
+      customer: this.elementText(order, 'customer'),
+      totalPrice: this.elementText(order, 'totalPrice'),
+      createdAt: this.elementText(order, 'createdAt')
+    }));
+
+    return {
+      generatedAt: root.getAttribute('generatedAt') ?? '-',
+      totalOrders: this.text(document, 'totalOrders'),
+      paidRevenue: this.text(document, 'paidRevenue'),
+      statuses,
+      orders
+    };
+  }
+
+  private text(document: Document, selector: string): string {
+    return document.querySelector(selector)?.textContent?.trim() || '-';
+  }
+
+  private elementText(element: Element, selector: string): string {
+    return element.querySelector(selector)?.textContent?.trim() || '-';
+  }
+
   private handleXmlViewerError(error: unknown, message: string): void {
     console.error(error);
     this.xmlViewerLoading.set(false);
     this.xmlViewerError.set(message);
   }
 
-  /** Formats compact XML with indentation for easier reading in the browser. */
-  private prettyXml(xml: string): string {
-    const normalized = xml.replace(/>\s*</g, '><').trim();
-    const tokens = normalized.replace(/(>)(<)(\/*)/g, '$1\n$2$3').split('\n');
-    let indent = 0;
-
-    return tokens.map(token => {
-      const trimmed = token.trim();
-      if (/^<\//.test(trimmed)) indent = Math.max(0, indent - 1);
-      const line = `${'  '.repeat(indent)}${trimmed}`;
-      if (/^<[^!?/][^>]*[^/]>/i.test(trimmed) && !/<\/[^>]+>$/.test(trimmed)) indent += 1;
-      return line;
-    }).join('\n');
-  }
-
-  /** Creates a temporary browser URL and triggers a file download. */
   private downloadBlob(blob: Blob, fileName: string): void {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -218,10 +268,8 @@ export class Orders implements OnInit {
     URL.revokeObjectURL(url);
   }
 
-  /** Navigates back to the landing page appropriate to the current role. */
   goBack(): void { void this.router.navigateByUrl(this.authService.defaultRoute()); }
 
-  /** Ends the current session and returns to login. */
   logout(): void {
     this.authService.logout();
     void this.router.navigate(['/login']);
