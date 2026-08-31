@@ -12,6 +12,9 @@ import { Meal } from '../models/meal';
 export class CartService {
   private readonly _items = signal<CartItem[]>([]);
 
+  /** Maximum number of units a customer may order from one meal. */
+  readonly maxQuantity = 5;
+
   /** Read-only reactive list of cart items exposed to components. */
   readonly items = this._items.asReadonly();
 
@@ -27,12 +30,14 @@ export class CartService {
 
   /**
    * Adds a meal to the cart or increments its quantity when already present.
+   * Quantities are capped at five units per meal.
    * @param meal meal selected by the customer
    */
   add(meal: Meal): void {
     const items = this._items();
     const existing = items.find(item => item.meal.id === meal.id);
     if (existing) {
+      if (existing.quantity >= this.maxQuantity) return;
       this._items.set(items.map(item =>
         item.meal.id === meal.id ? { ...item, quantity: item.quantity + 1 } : item));
     } else {
@@ -40,10 +45,22 @@ export class CartService {
     }
   }
 
+  /** @returns the current quantity of one meal in the cart */
+  quantityFor(mealId: number): number {
+    return this._items().find(item => item.meal.id === mealId)?.quantity ?? 0;
+  }
+
+  /** @returns whether one meal has reached the per-item order limit */
+  isAtMax(mealId: number): boolean {
+    return this.quantityFor(mealId) >= this.maxQuantity;
+  }
+
   /** @param mealId identifier of the meal whose quantity should increase */
   increase(mealId: number): void {
     this._items.update(items => items.map(item =>
-      item.meal.id === mealId ? { ...item, quantity: item.quantity + 1 } : item));
+      item.meal.id === mealId && item.quantity < this.maxQuantity
+        ? { ...item, quantity: item.quantity + 1 }
+        : item));
   }
 
   /** Decreases quantity and removes the item automatically when it reaches zero. */
