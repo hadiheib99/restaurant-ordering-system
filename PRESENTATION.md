@@ -4,7 +4,7 @@ Use this guide to explain the Restaurant Ordering System clearly in a university
 
 ## 1. One-minute introduction
 
-> My project is a full-stack Restaurant Ordering System. The backend is built with Spring Boot 4.1.1 and Java, the frontend is Angular, PostgreSQL stores the data, and ActiveMQ Artemis is used for asynchronous order events. The system supports four roles: customer, chef, waiter and admin. The project demonstrates REST Web Services, JPA/Hibernate and JMS from the course. XML is used for receipts and reports, and the latest version also includes a human-readable XML reader so users can view XML data inside the application without seeing raw XML code.
+> My project is a full-stack Restaurant Ordering System. The backend is built with Spring Boot 4.1.1 and Java, the frontend is Angular, PostgreSQL stores the data, and ActiveMQ Artemis is used for asynchronous order events. The system supports four roles: customer, chef, waiter and admin. The project demonstrates REST Web Services, JPA/Hibernate and JMS from the course. XML is used for receipts and reports, and the latest version also includes a human-readable XML reader so users can view XML data inside the application without seeing raw XML code. I also added validation that limits each meal to a maximum of five units per order, enforced in both the frontend and backend.
 
 ## 2. Application demo order
 
@@ -15,10 +15,11 @@ Show the project by screens and roles first.
 1. Log in as customer using the password printed by `bash start.sh`.
 2. Show Menu with images, search and category filters.
 3. Add meals to the cart and change quantities.
-4. Place an order.
-5. Show the success message and the order in `My Orders`.
-6. Click **View Receipt** to show the readable receipt parsed from XML.
-7. Optionally click **Download XML** to show that the raw XML is still available.
+4. Demonstrate the quantity limit: increase one meal to `5` and show that `Add to Order` / `+` can no longer increase it.
+5. Place an order.
+6. Show the success message and the order in `My Orders`.
+7. Click **View Receipt** to show the readable receipt parsed from XML.
+8. Optionally click **Download XML** to show that the raw XML is still available.
 
 ### Chef flow
 
@@ -41,7 +42,7 @@ Show the project by screens and roles first.
 4. Click **View XML Report** to show the readable report parsed from XML.
 5. Optionally click **Download XML Report**.
 
-This demo proves authentication, authorization, REST communication, JPA persistence, JMS messaging, XML export/reading and the business workflow.
+This demo proves authentication, authorization, REST communication, JPA persistence, JMS messaging, XML export/reading, validation and the business workflow.
 
 ## 3. Edge cases to demonstrate
 
@@ -56,12 +57,30 @@ Prepare these cases because the instructor may try to break the system:
 - Customer trying to cancel an order after `READY`.
 - Chef trying to do waiter-only actions.
 - Waiter trying to jump from `NEW` directly to `PAID`.
-- Ordering unavailable meal or invalid quantity.
+- Ordering unavailable meal.
+- Sending invalid quantity below 1.
+- Trying to order more than 5 units of the same meal.
 - Admin trying to create a duplicate category.
+
+For the maximum-5 case, explain both layers:
+
+```text
+Normal user
+   ↓
+Angular cart prevents quantity > 5
+
+Manual / crafted API request
+   ↓
+POST /api/orders with quantity: 6
+   ↓
+OrderItemRequest @Max(5)
+   ↓
+Backend rejects the request
+```
 
 Good sentence to say:
 
-> The frontend hides invalid actions for usability, but the real protection is in the backend through Spring Security and service-level business rules.
+> The frontend prevents invalid actions for usability, but I never rely only on the frontend. The backend applies the same important business validation, so bypassing the Angular UI does not bypass the rule.
 
 ## 4. Architecture
 
@@ -71,6 +90,8 @@ Angular Frontend
       | REST / HTTP + JWT
       v
 Spring Boot REST API
+      |
+      +---- Bean Validation / business rules
       |
       +---- PostgreSQL through JPA/Hibernate
       |
@@ -87,6 +108,8 @@ Angular Component
 Angular Service
       ↓
 REST Controller
+      ↓
+DTO validation
       ↓
 Service Layer
       ↓
@@ -217,11 +240,15 @@ Customer clicks Place Order
       ↓
 Angular Menu / Cart
       ↓
+CartService (quantity capped at 5)
+      ↓
 OrderService frontend
       ↓
 POST /api/orders
       ↓
 OrderController
+      ↓
+OrderRequest / OrderItemRequest validation
       ↓
 OrderServiceImpl
       ↓
@@ -238,6 +265,30 @@ KitchenListener
 OrderResponse returns to Angular
 ```
 
+In the frontend, show:
+
+```text
+frontend/src/app/core/services/cart.ts
+frontend/src/app/pages/menu/menu.html
+```
+
+Explain that `CartService.add()` and `increase()` stop at 5, and the buttons are disabled when the current quantity reaches the maximum.
+
+In the backend, show:
+
+```text
+src/main/java/com/restaurant/ordering/dto/OrderItemRequest.java
+```
+
+Explain:
+
+```java
+@Min(value = 1, message = "Quantity must be at least 1")
+@Max(value = 5, message = "Quantity must not exceed 5")
+```
+
+This means the REST API itself rejects quantities outside `1..5`.
+
 In `OrderServiceImpl.createOrder`, explain:
 
 - Find the customer.
@@ -251,7 +302,27 @@ In `OrderServiceImpl.createOrder`, explain:
 - Publish a JMS order event.
 - Return an `OrderResponse` DTO.
 
-## 8. Security flow
+## 8. Why validate on both frontend and backend?
+
+This is a good question to prepare for.
+
+Frontend validation:
+
+- gives immediate feedback
+- disables impossible controls
+- improves user experience
+
+Backend validation:
+
+- cannot be trusted to the browser
+- protects the API from manually crafted requests
+- is the authoritative rule
+
+Good answer:
+
+> I limit the cart to five in Angular for UX, but I also use `@Max(5)` in the backend DTO because a user can bypass the frontend and call the REST API directly. The backend must enforce the real rule.
+
+## 9. Security flow
 
 Authentication answers: **Who are you?**
 Authorization answers: **What are you allowed to do?**
@@ -280,7 +351,7 @@ Important file:
 SecurityConfig.java
 ```
 
-## 9. Security hardening
+## 10. Security hardening
 
 Explain briefly:
 
@@ -295,7 +366,7 @@ Explain briefly:
 
 Do not claim a final `0 HIGH / 0 CRITICAL` unless you rerun Trivy after pulling the latest `master`.
 
-## 10. Tests and CI
+## 11. Tests and CI
 
 Say:
 
@@ -309,9 +380,15 @@ frontend/src/**/*.spec.ts
 .github/workflows/ci.yml
 ```
 
-The frontend tests include XML reader behavior: opening the reader, parsing receipt XML and closing the reader.
+Relevant frontend tests include:
 
-## 11. Final verification commands
+- XML reader behavior
+- adding/increasing cart quantities
+- quantity never going above 5
+
+The backend independently validates order item quantity using Bean Validation.
+
+## 12. Final verification commands
 
 ```bash
 git switch master
@@ -336,13 +413,20 @@ bash stop.sh
 bash start.sh
 ```
 
-## 12. What I learned
+Before presentation, manually verify this edge case too:
+
+```text
+Add one meal -> 1 -> 2 -> 3 -> 4 -> 5
+At 5, the plus/add control is disabled and quantity remains 5.
+```
+
+## 13. What I learned
 
 Good answer:
 
-> I learned how separate technologies connect into one complete application: Angular, REST, Spring Boot, JWT security, JPA/Hibernate, PostgreSQL, JMS, Docker and CI. I also learned how to generate XML on the backend and parse it on the frontend to present it in a user-friendly way.
+> I learned how separate technologies connect into one complete application: Angular, REST, Spring Boot, JWT security, JPA/Hibernate, PostgreSQL, JMS, Docker and CI. I also learned how to generate XML on the backend and parse it on the frontend to present it in a user-friendly way. Another important lesson was that important validation must exist in the backend even when the frontend already prevents the invalid action.
 
-## 13. Difficulties
+## 14. Difficulties
 
 Mention:
 
@@ -354,8 +438,9 @@ Mention:
 - Handling dependency vulnerabilities found by Trivy.
 - Keeping Angular DTOs and backend DTOs aligned.
 - Presenting XML in a way normal users can read.
+- Keeping business validation consistent between the UI and API.
 
-## 14. Future improvements
+## 15. Future improvements
 
 - Real-time updates with WebSocket or SSE.
 - Real payment integration.
@@ -366,7 +451,7 @@ Mention:
 - More end-to-end tests.
 - Deployment to a cloud environment.
 
-## 15. Short answers to expected questions
+## 16. Short answers to expected questions
 
 ### Which three technologies from the course did you use?
 
@@ -386,4 +471,8 @@ Mention:
 
 ### Where is the real security?
 
-> In the backend. Angular hides buttons for usability, but Spring Security and service-level checks enforce the actual permissions.
+> In the backend. Angular hides or disables controls for usability, but Spring Security, Bean Validation and service-level checks enforce the actual rules.
+
+### Why limit each meal to 5 in two places?
+
+> Angular enforces it for user experience, but the backend uses `@Max(5)` because the frontend can be bypassed. A direct API request with quantity 6 must still be rejected.
