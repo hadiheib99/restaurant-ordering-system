@@ -4,6 +4,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -15,15 +16,26 @@ import java.util.Map;
 /**
  * Converts backend exceptions into consistent JSON error responses for REST clients.
  *
- * <p>The handler maps not-found, validation, authorization, integrity and generic
- * errors to appropriate HTTP status codes while keeping the response structure
- * consistent for the Angular frontend.</p>
+ * <p>The handler maps authentication, not-found, validation, authorization,
+ * integrity and generic errors to appropriate HTTP status codes while keeping
+ * the response structure consistent for the Angular frontend.</p>
  *
  * @author Abdulhadi Heib
  * @version 1.0
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    /**
+     * Handles invalid login credentials reported by Spring Security.
+     *
+     * @param ex authentication failure
+     * @return HTTP 401 response with a client-safe credential message
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<Map<String, Object>> handleAuthentication(AuthenticationException ex) {
+        return error(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+    }
 
     /**
      * Handles requests for domain resources that do not exist.
