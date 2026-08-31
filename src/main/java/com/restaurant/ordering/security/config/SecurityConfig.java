@@ -37,6 +37,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    /** Roles allowed to reach order-status PATCH endpoints; service rules still enforce valid actions. */
+    static final String[] ORDER_PATCH_ROLES = {"ADMIN", "WAITER", "CHEF", "CUSTOMER"};
+
     private final CustomUserDetailsService userDetailsService;
 
     /**
@@ -87,7 +90,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/meals/**", "/api/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/orders/**").hasAnyRole("ADMIN", "WAITER", "CHEF", "CUSTOMER")
                         .requestMatchers(HttpMethod.POST, "/api/orders/**").hasAnyRole("ADMIN", "WAITER", "CUSTOMER")
-                        .requestMatchers(HttpMethod.PATCH, "/api/orders/**").hasAnyRole("ADMIN", "WAITER", "CHEF", "CUSTOMER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/orders/**").hasAnyRole(ORDER_PATCH_ROLES)
                         .requestMatchers(HttpMethod.PUT, "/api/orders/**").hasAnyRole("ADMIN", "WAITER")
                         .requestMatchers(HttpMethod.DELETE, "/api/orders/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
