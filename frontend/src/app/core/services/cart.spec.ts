@@ -38,6 +38,18 @@ describe('CartService', () => {
     expect(service.total()).toBe(80);
   });
 
+  it('caps a meal at five units when adding or increasing', () => {
+    for (let i = 0; i < 7; i += 1) service.add(meal);
+
+    expect(service.items()[0].quantity).toBe(5);
+    expect(service.count()).toBe(5);
+    expect(service.total()).toBe(200);
+    expect(service.isAtMax(meal.id)).toBe(true);
+
+    service.increase(meal.id);
+    expect(service.items()[0].quantity).toBe(5);
+  });
+
   it('decreasing quantity to zero removes the item', () => {
     service.add(meal);
     service.decrease(meal.id);

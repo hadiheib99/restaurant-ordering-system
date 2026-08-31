@@ -68,7 +68,9 @@
                   <div class="meal-footer">
                     <strong>₪{{ meal.price }}</strong>
                     @if (meal.available) {
-                      <button type="button" (click)="addToCart(meal)">Add to Order</button>
+                      <button type="button" [disabled]="cartService.isAtMax(meal.id)" (click)="addToCart(meal)">
+                        {{ cartService.isAtMax(meal.id) ? 'Max 5 Added' : 'Add to Order' }}
+                      </button>
                     } @else {
                       <span class="unavailable">Unavailable</span>
                     }
@@ -86,7 +88,7 @@
             <div>
               <p class="eyebrow">Ready when you are</p>
               <h2>Your Order</h2>
-              <span>{{ cartService.count() }} item(s)</span>
+              <span>{{ cartService.count() }} item(s) · max 5 of each meal</span>
             </div>
             <button type="button" class="clear-button" [disabled]="placingOrder()" (click)="cartService.clear()">Clear</button>
           </div>
@@ -102,7 +104,7 @@
                   <div class="quantity-controls">
                     <button type="button" [disabled]="placingOrder()" (click)="cartService.decrease(item.meal.id)">−</button>
                     <span>{{ item.quantity }}</span>
-                    <button type="button" [disabled]="placingOrder()" (click)="cartService.increase(item.meal.id)">+</button>
+                    <button type="button" [disabled]="placingOrder() || item.quantity >= cartService.maxQuantity" (click)="cartService.increase(item.meal.id)">+</button>
                   </div>
                   <strong class="item-total">₪{{ item.meal.price * item.quantity }}</strong>
                 </div>
