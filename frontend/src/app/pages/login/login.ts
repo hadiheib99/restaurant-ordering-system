@@ -54,11 +54,20 @@ export class Login {
       },
       error: error => {
         this.loading.set(false);
+
         if (error.status === 401) {
           this.errorMessage.set('Invalid email or password.');
-        } else {
-          this.errorMessage.set('The server could not be reached. Make sure Spring Boot is running.');
+          return;
         }
+
+        if (error.status === 0) {
+          this.errorMessage.set('The server could not be reached. Make sure Spring Boot is running.');
+          return;
+        }
+
+        this.errorMessage.set(
+          error?.error?.message ?? 'Unable to sign in. Please try again.'
+        );
       }
     });
   }
