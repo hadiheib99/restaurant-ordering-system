@@ -9,6 +9,7 @@ A full-stack restaurant ordering application built with **Spring Boot 4.1.1**, *
 - Public customer registration
 - Responsive restaurant menu with images, search and category filters
 - Shopping cart with quantity controls and order placement
+- **Maximum 5 units of each meal per order**, enforced in both the Angular cart and backend validation
 - Customer order history and live status visibility
 - Role-specific order workflow and cancellation rules
 - JMS order events through ActiveMQ Artemis
@@ -26,7 +27,7 @@ A full-stack restaurant ordering application built with **Spring Boot 4.1.1**, *
 
 | Role | Permissions |
 | --- | --- |
-| Customer | Register, log in, browse/search/filter menu, create orders, view own orders, cancel own order before `READY`, view readable receipt, download XML receipt |
+| Customer | Register, log in, browse/search/filter menu, create orders with up to 5 units of each meal, view own orders, cancel own order before `READY`, view readable receipt, download XML receipt |
 | Chef | View restaurant orders, `NEW -> PREPARING -> READY` |
 | Waiter | View restaurant orders, cancel before `READY`, `READY -> SERVED -> PAID` |
 | Admin | Full management access, valid order transitions, readable XML report, XML report download |
@@ -39,6 +40,17 @@ NEW -> PREPARING -> READY -> SERVED -> PAID
 
 `NEW` and `PREPARING` may also be cancelled where allowed by backend role and workflow rules.
 
+## Order quantity rule
+
+Each order line must contain between **1 and 5 units** of a meal.
+
+The rule is enforced at two levels:
+
+- **Frontend:** `CartService` stops `Add to Order` and `+` from increasing an item beyond 5, and the controls are disabled when the item reaches the limit.
+- **Backend:** `OrderItemRequest` uses Bean Validation with `@Min(1)` and `@Max(5)`, so a manually crafted REST request such as `quantity: 6` is rejected even if the frontend is bypassed.
+
+This is intentional defense in depth: frontend validation improves usability, while backend validation is the authoritative protection.
+
 ## Technology stack
 
 ### Backend
@@ -48,6 +60,7 @@ NEW -> PREPARING -> READY -> SERVED -> PAID
 - Spring MVC / REST Controllers
 - Spring Data JPA / Hibernate
 - Spring Security + OAuth2 Resource Server JWT
+- Jakarta Bean Validation
 - Spring JMS
 - ActiveMQ Artemis
 - PostgreSQL
@@ -135,6 +148,17 @@ POST   /api/orders
 PATCH  /api/orders/{id}/status?value=PREPARING
 DELETE /api/orders/{id}
 ```
+
+Example order item request:
+
+```json
+{
+  "mealId": 5,
+  "quantity": 3
+}
+```
+
+`quantity` must be from `1` through `5`.
 
 ### XML endpoints
 
@@ -235,11 +259,13 @@ npm run build
 cd ..
 ```
 
+The cart tests verify that repeated `add()` and `increase()` operations stop at quantity 5. Backend request validation independently rejects quantities greater than 5.
+
 GitHub Actions runs backend tests, JavaDoc generation, frontend tests, Angular production build and a backend smoke test against PostgreSQL and ActiveMQ Artemis.
 
 ## Presentation guide
 
-The recommended presentation flow is documented in `PRESENTATION.md`: application screens, edge cases, code flow, course technologies, lessons learned, difficulties and future improvements.
+The recommended presentation flow is documented in `PRESENTATION.md`: application screens, edge cases, code flow, course technologies, lessons learned, difficulties and future improvements. The quantity-limit edge case is included so it can be demonstrated directly during the presentation.
 
 ## Docker images
 
