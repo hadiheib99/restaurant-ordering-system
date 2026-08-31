@@ -37,8 +37,13 @@ export class Register {
 
   /** Validates and submits a new customer account to the authentication service. */
   submit(): void {
-    if (this.registerForm.invalid || this.loading()) {
+    if (this.loading()) {
+      return;
+    }
+
+    if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
+      this.errorMessage.set('Please complete all required fields correctly.');
       return;
     }
 
@@ -51,7 +56,27 @@ export class Register {
       },
       error: error => {
         this.loading.set(false);
-        this.errorMessage.set(error?.error?.message ?? error?.error?.error ?? 'Could not create account.');
+
+        if (error.status === 0) {
+          this.errorMessage.set('The server could not be reached. Make sure Spring Boot is running.');
+          return;
+        }
+
+        const backendMessage =
+          error?.error?.message ??
+          (typeof error?.error === 'string' ? error.error : undefined);
+
+        if (backendMessage) {
+          this.errorMessage.set(backendMessage);
+          return;
+        }
+
+        if (error.status === 409) {
+          this.errorMessage.set('This email or username is already registered.');
+          return;
+        }
+
+        this.errorMessage.set('Could not create account. Please check your details and try again.');
       }
     });
   }
