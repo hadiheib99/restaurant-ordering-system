@@ -1,6 +1,7 @@
 package com.restaurant.ordering.exception;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -93,6 +94,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleConflict(DataIntegrityViolationException ex) {
         return error(HttpStatus.CONFLICT, "The operation conflicts with existing restaurant data");
+    }
+
+    /**
+     * Handles a write that targets data changed by another request.
+     *
+     * @param ex stale write failure
+     * @return HTTP 409 response asking the client to retry with fresh data
+     */
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<Map<String, Object>> handleConcurrentUpdate(ObjectOptimisticLockingFailureException ex) {
+        return error(HttpStatus.CONFLICT, "The data changed while this request was being processed; refresh and try again");
     }
 
     /**

@@ -8,6 +8,7 @@ import com.restaurant.ordering.model.User;
 import com.restaurant.ordering.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -22,6 +23,7 @@ import java.util.List;
  * @version 1.0
  */
 @Service
+@Transactional
 public class UserService {
 
     private final UserRepository userRepository;
