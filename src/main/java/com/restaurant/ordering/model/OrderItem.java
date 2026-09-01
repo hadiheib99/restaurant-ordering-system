@@ -2,6 +2,9 @@ package com.restaurant.ordering.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.OptimisticLockType;
+import org.hibernate.annotations.OptimisticLocking;
 
 import java.math.BigDecimal;
 
@@ -17,6 +20,8 @@ import java.math.BigDecimal;
  */
 @Entity
 @Table(name = "order_items")
+@DynamicUpdate
+@OptimisticLocking(type = OptimisticLockType.ALL)
 @Getter
 @Setter
 @NoArgsConstructor

@@ -1,6 +1,9 @@
 package com.restaurant.ordering.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.OptimisticLockType;
+import org.hibernate.annotations.OptimisticLocking;
 
 import java.math.BigDecimal;
 
@@ -15,6 +18,8 @@ import java.math.BigDecimal;
  */
 @Entity
 @Table(name = "meals")
+@DynamicUpdate
+@OptimisticLocking(type = OptimisticLockType.ALL)
 public class Meal {
 
     @Id

@@ -1,6 +1,9 @@
 package com.restaurant.ordering.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.OptimisticLockType;
+import org.hibernate.annotations.OptimisticLocking;
 
 import java.time.LocalDateTime;
 
@@ -22,6 +25,8 @@ import java.time.LocalDateTime;
                 @UniqueConstraint(name = "uk_user_email", columnNames = "email")
         }
 )
+@DynamicUpdate
+@OptimisticLocking(type = OptimisticLockType.ALL)
 public class User {
 
     @Id

@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.OptimisticLockType;
+import org.hibernate.annotations.OptimisticLocking;
 
 /**
  * JPA entity representing a menu category such as Pizza, Drinks or Desserts.
@@ -16,6 +19,8 @@ import lombok.NoArgsConstructor;
  */
 @Entity
 @Table(name = "categories")
+@DynamicUpdate
+@OptimisticLocking(type = OptimisticLockType.ALL)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
